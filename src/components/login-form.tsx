@@ -189,7 +189,7 @@ export function LoginForm() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
                 <Checkbox id="remember-me" name="remember-me" />
-                <Label htmlFor="remember-me" className="text-sm font-medium leading-none">Remember me</Label>
+                <Label htmlFor="remember-me" className="text-sm font-medium leading-none">{t('login.rememberMe')}</Label>
             </div>
             <Link
                 href="#"

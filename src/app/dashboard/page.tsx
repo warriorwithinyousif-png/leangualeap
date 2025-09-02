@@ -57,12 +57,11 @@ const getLast7Days = () => {
 
 const allTests = ["Present Simple", "Past Simple", "Present Continuous", "Comprehensive"];
 
-// Helper to check if a date is today, ignoring timezone issues
-const isToday = (someDate: Date) => {
+const isTodayUTC = (date: Date) => {
     const today = new Date();
-    return someDate.getDate() === today.getDate() &&
-           someDate.getMonth() === today.getMonth() &&
-           someDate.getFullYear() === today.getFullYear();
+    return date.getUTCFullYear() === today.getUTCFullYear() &&
+           date.getUTCMonth() === today.getUTCMonth() &&
+           date.getUTCDate() === today.getUTCDate();
 };
 
 export default function Dashboard() {
@@ -97,7 +96,7 @@ export default function Dashboard() {
 
         // CORRECTED LOGIC: Sync these counts with the respective page logic
         const toReview = words.filter(w => new Date(w.nextReview) <= new Date() && w.strength >= 0).length;
-        const todayCount = words.filter(w => isToday(new Date(w.nextReview)) && w.strength >= 0).length;
+        const todayCount = words.filter(w => isTodayUTC(new Date(w.nextReview)) && w.strength >= 0).length;
         const mastered = words.filter(w => w.strength === -1).length;
         const learning = words.filter(w => w.strength >= 0 && new Date(w.nextReview) > new Date()).length;
 
