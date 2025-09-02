@@ -26,7 +26,7 @@ import { useLanguage } from "@/hooks/use-language";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
-import { format, subDays, formatDistanceToNowStrict, isPast } from "date-fns";
+import { format, subDays, formatDistanceToNowStrict, isPast, isToday } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -56,13 +56,6 @@ const getLast7Days = () => {
 };
 
 const allTests = ["Present Simple", "Past Simple", "Present Continuous", "Comprehensive"];
-
-const isTodayUTC = (date: Date) => {
-    const today = new Date();
-    return date.getUTCFullYear() === today.getUTCFullYear() &&
-           date.getUTCMonth() === today.getUTCMonth() &&
-           date.getUTCDate() === today.getUTCDate();
-};
 
 export default function Dashboard() {
   const searchParams = useSearchParams();
@@ -96,7 +89,7 @@ export default function Dashboard() {
 
         // CORRECTED LOGIC: Sync these counts with the respective page logic
         const toReview = words.filter(w => new Date(w.nextReview) <= new Date() && w.strength >= 0).length;
-        const todayCount = words.filter(w => isTodayUTC(new Date(w.nextReview)) && w.strength >= 0).length;
+        const todayCount = words.filter(w => isToday(new Date(w.nextReview)) && w.strength >= 0).length;
         const mastered = words.filter(w => w.strength === -1).length;
         const learning = words.filter(w => w.strength >= 0 && new Date(w.nextReview) > new Date()).length;
 
@@ -241,7 +234,7 @@ export default function Dashboard() {
             </Card>
             <Link href={`/dashboard/learning-words?userId=${user.id}`} className="hover:opacity-90 transition-opacity">
                 <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardHeader className="flex flex-row items-center justify-.tsx
                     <CardTitle className="text-sm font-medium">
                          {t('dashboard.student.progressOverview.reviewedToday')}
                     </CardTitle>
@@ -294,7 +287,7 @@ export default function Dashboard() {
                   <p className="text-2xl font-bold">{stats.reviewedToday.count}</p>
                   <p className="text-sm text-muted-foreground text-center">{t('dashboard.student.progressOverview.reviewedToday')}</p>
               </div>
-              <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-secondary">
+              <div className="flex flex-col items-center justify-center p-4 rounded-.tsx ag bg-secondary">
                   <Trophy className="h-8 w-8 text-primary mb-2"/>
                   <p className="text-2xl font-bold">{wordsMasteredCount}</p>
                   <p className="text-sm text-muted-foreground text-center">{t('dashboard.student.progressOverview.masteredWords')}</p>
