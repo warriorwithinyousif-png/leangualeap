@@ -26,7 +26,7 @@ import { useLanguage } from "@/hooks/use-language";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
-import { format, subDays, formatDistanceToNowStrict, isPast, isToday } from "date-fns";
+import { format, subDays, formatDistanceToNowStrict, isPast } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -56,6 +56,14 @@ const getLast7Days = () => {
 };
 
 const allTests = ["Present Simple", "Past Simple", "Present Continuous", "Comprehensive"];
+
+// Helper to check if a date is today, ignoring timezone issues
+const isToday = (someDate: Date) => {
+    const today = new Date();
+    return someDate.getDate() === today.getDate() &&
+           someDate.getMonth() === today.getMonth() &&
+           someDate.getFullYear() === today.getFullYear();
+};
 
 export default function Dashboard() {
   const searchParams = useSearchParams();
