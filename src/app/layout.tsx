@@ -1,0 +1,61 @@
+
+"use client";
+
+import { PT_Sans, Belleza } from "next/font/google";
+import "./globals.css";
+import { Toaster } from "@/components/ui/toaster";
+import { cn } from "@/lib/utils";
+import { LanguageProvider } from "@/hooks/use-language.tsx";
+import { ThemeProvider } from "@/hooks/use-theme";
+import { LanguageSetter } from "@/components/language-setter";
+
+const ptSans = PT_Sans({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-pt-sans",
+});
+
+const belleza = Belleza({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-belleza",
+});
+
+function AppBody({ children }: { children: React.ReactNode }) {
+  return (
+    <body
+      className={cn(
+        "min-h-screen bg-background font-body antialiased",
+        ptSans.variable,
+        belleza.variable
+      )}
+      suppressHydrationWarning
+    >
+        {children}
+    </body>
+  );
+}
+
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en" dir="ltr" suppressHydrationWarning>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        </head>
+        <ThemeProvider>
+            <LanguageProvider>
+                <LanguageSetter />
+                <AppBody>
+                  {children}
+                  <Toaster />
+                </AppBody>
+            </LanguageProvider>
+        </ThemeProvider>
+    </html>
+  );
+}
