@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
@@ -133,6 +134,7 @@ export default function LearnClientPage() {
     if (!currentWord || !userId) return;
     // Set the review for today
     const nextReview = new Date(); 
+    nextReview.setHours(0, 0, 0, 0); // Set to the beginning of the day in local timezone
     await updateStudentProgressInStorage(userId, currentWord.id, { strength: 1, nextReview });
     await handleUpdateStats(1, 0);
     // Remove the learned word from the main list to prevent it from reappearing

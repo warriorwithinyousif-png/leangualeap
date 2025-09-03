@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import {
@@ -88,7 +89,7 @@ export default function Dashboard() {
 
         const todayCount = words.filter(w => isToday(new Date(w.nextReview)) && w.strength >= 0).length;
         const mastered = words.filter(w => w.strength === -1).length;
-        const learning = words.filter(w => w.strength > 0 && !isPast(new Date(w.nextReview))).length;
+        const learning = words.filter(w => w.strength > 0 && !isToday(new Date(w.nextReview))).length;
 
         setTodaysReviewCount(todayCount);
         setWordsMasteredCount(mastered);

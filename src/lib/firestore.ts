@@ -19,7 +19,8 @@ import {
 import { db } from './firebase'; // Import the initialized db instance
 import type { User, Word, Message, SupervisorMessage, PeerMessage } from './data';
 import type { WordProgress } from './storage';
-import { isToday, addYears } from 'date-fns';
+import { addYears } from 'date-fns';
+import { isToday as dateFnsIsToday } from 'date-fns';
 
 // --- User Functions ---
 export async function getNextSupervisorShortId(): Promise<string> {
@@ -376,6 +377,12 @@ export async function getHeroImage(): Promise<string | undefined> {
     return undefined;
 }
 
+const isToday = (date: Date) => {
+    // This function doesn't account for timezone, it uses the browser's local timezone.
+    // For more accurate timezone handling, a library like date-fns-tz would be needed.
+    // However, for this app's purpose, this should be sufficient.
+    return dateFnsIsToday(date);
+}
 
 // --- Functions that were missing ---
 export async function getWordsForStudent(studentId: string): Promise<(Word & WordProgress)[]> {
@@ -407,18 +414,6 @@ export async function getWordsForStudent(studentId: string): Promise<(Word & Wor
             };
         }
     });
-
-    // Check if there are any new words to add to the student's progress subcollection
-    const newProgressToSave = mergedWords.filter(w => !studentProgressMap.has(w.id)).map(w => ({
-        id: w.id,
-        strength: w.strength,
-        nextReview: w.nextReview,
-        studentId: studentId
-    }));
-
-    if (newProgressToSave.length > 0) {
-        await saveStudentProgress(studentId, newProgressToSave);
-    }
 
     return mergedWords;
 }
