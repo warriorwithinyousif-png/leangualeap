@@ -46,7 +46,7 @@ const getLast7Days = () => {
   for (let i = 0; i < 7; i++) {
     const day = subDays(new Date(), i);
     days.push({
-      date: day.toLocaleDateString('en-CA'),
+      date: format(day, "yyyy-MM-dd"),
       dayInitial: format(day, "E")[0], // 'M', 'T', 'W', etc.
     });
   }
@@ -65,17 +65,18 @@ export default function StudentsPage() {
   const [students, setStudents] = useState<StudentWithStats[]>([]);
   const last7Days = getLast7Days();
   const userId = searchParams.get('userId');
+  const [userTimezone, setUserTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
   
   const fetchData = useCallback(async () => {
     if (userId) {
-        const today = new Date().toLocaleDateString('en-CA');
+        //const today = new Date().toLocaleDateString('en-CA');
         const currentUser = await getUserById(userId);
         setUser(currentUser || null);
         if (currentUser) {
             const studentList = await getStudentsBySupervisorId(userId);
 
             const studentsWithStatsPromises = studentList.map(async (student) => {
-                const stats = await getStatsForUser(student.id, today);
+                const stats = await getStatsForUser(student.id, userTimezone);
                 const words = await getWordsForStudent(student.id);
                 const mastered = words.filter(w => w.strength === -1).length;
                 const learning = words.length - mastered;
@@ -91,7 +92,7 @@ export default function StudentsPage() {
             setStudents(studentsWithStats);
         }
     }
-  }, [userId]);
+  }, [userId, userTimezone]);
   
   useEffect(() => {
     fetchData();

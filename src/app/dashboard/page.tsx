@@ -48,7 +48,7 @@ const getLast7Days = () => {
   for (let i = 0; i < 7; i++) {
     const day = subDays(new Date(), i);
     days.push({
-      date: day.toLocaleDateString('en-CA'),
+      date: format(day, "yyyy-MM-dd"),
       dayInitial: format(day, "E")[0], // 'M', 'T', 'W', etc.
     });
   }
@@ -74,13 +74,14 @@ export default function Dashboard() {
   const [allStudentWords, setAllStudentWords] = useState<(Word & WordProgress)[]>([]);
   const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<string | null>(null);
+  const [userTimezone, setUserTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
   
   const last7Days = getLast7Days();
 
   const fetchData = useCallback(async () => {
     if (userId) {
       setLoading(true);
-      const today = new Date().toLocaleDateString('en-CA');
+      //const today = new Date().toLocaleDateString('en-CA');
       const foundUser = await getUserById(userId);
       setUser(foundUser || null);
       
@@ -99,7 +100,7 @@ export default function Dashboard() {
         setWordsMasteredCount(mastered);
         setWordsLearningCount(learning);
         
-        let currentStats = await getStatsForUser(userId, today);
+        let currentStats = await getStatsForUser(userId, userTimezone);
         
         // Daily Login XP Check
         const { updated, amount } = await updateXp(userId, 'daily_login');
@@ -109,7 +110,7 @@ export default function Dashboard() {
                 duration: 3000,
             });
             // Refetch stats to include the new XP from daily login
-            currentStats = await getStatsForUser(userId, today);
+            currentStats = await getStatsForUser(userId, userTimezone);
         }
         
         setStats(currentStats);
@@ -120,7 +121,7 @@ export default function Dashboard() {
       }
     }
     setLoading(false);
-  }, [userId, toast]);
+  }, [userId, toast, userTimezone]);
 
   useEffect(() => {
     fetchData();

@@ -3,6 +3,7 @@
 'use client';
 
 import { getWeek, startOfWeek } from 'date-fns';
+import { utcToZonedTime, format } from 'date-fns-tz';
 import { XpToast } from '@/components/xp-toast';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
@@ -41,6 +42,14 @@ export const XP_AMOUNTS: Record<XpEvent, number> = {
     grammar_test: 20
 };
 
+const getTodayInTimezone = (timezone: string): { todayStr: string, todayDate: Date } => {
+    const now = new Date();
+    const zonedDate = utcToZonedTime(now, timezone);
+    const todayStr = format(zonedDate, 'yyyy-MM-dd', { timeZone: timezone });
+    return { todayStr, todayDate: zonedDate };
+};
+
+
 export const getInitialStats = (today: string): LearningStats => ({
     timeSpentSeconds: 0,
     totalWordsReviewed: 0,
@@ -52,9 +61,8 @@ export const getInitialStats = (today: string): LearningStats => ({
     weekStartDate: startOfWeek(new Date(), { weekStartsOn: 1 }).toISOString(), // Monday
 });
 
-export const getStatsForUser = async (userId: string, today?: string): Promise<LearningStats> => {
-    const todayStr = today || new Date().toLocaleDateString('en-CA');
-    const todayDate = today ? new Date(today) : new Date();
+export const getStatsForUser = async (userId: string, timezone: string = 'Asia/Baghdad'): Promise<LearningStats> => {
+    const { todayStr, todayDate } = getTodayInTimezone(timezone);
     const startOfThisWeek = startOfWeek(todayDate, { weekStartsOn: 1 });
 
     const statsDocRef = doc(db, `users/${userId}/app-data/stats`);
@@ -66,7 +74,6 @@ export const getStatsForUser = async (userId: string, today?: string): Promise<L
         stats = statsSnap.data() as LearningStats;
     } else {
         stats = getInitialStats(todayStr);
-        // If no stats exist, save the initial stats to Firestore
         await setDoc(statsDocRef, stats);
     }
 
@@ -96,18 +103,18 @@ export const getStatsForUser = async (userId: string, today?: string): Promise<L
     return stats;
 }
 
-export const updateXp = async (userId: string, event: XpEvent) => {
+export const updateXp = async (userId: string, event: XpEvent, timezone: string = 'Asia/Baghdad') => {
     if (!userId) return { updated: false, amount: 0 };
 
-    const today = new Date().toLocaleDateString('en-CA');
-    const stats = await getStatsForUser(userId, today);
+    const { todayStr } = getTodayInTimezone(timezone);
+    const stats = await getStatsForUser(userId, timezone);
     const amount = XP_AMOUNTS[event];
     
     if (event === 'daily_login') {
-        if (stats.lastLoginDate === today) {
+        if (stats.lastLoginDate === todayStr) {
             return { updated: false, amount: 0 }; // Already awarded today
         }
-        stats.lastLoginDate = today;
+        stats.lastLoginDate = todayStr;
     }
 
     stats.xp += amount;
@@ -126,6 +133,7 @@ type UpdateStatsParams = {
   testName?: string;
   spelledCount?: number;
   toast?: (props: any) => void;
+  timezone?: string;
 };
 
 export const updateLearningStats = async ({
@@ -135,11 +143,12 @@ export const updateLearningStats = async ({
   testName,
   spelledCount = 0,
   toast,
+  timezone = 'Asia/Baghdad',
 }: UpdateStatsParams) => {
   if (!userId) return;
   
-  const today = new Date().toLocaleDateString('en-CA');
-  const stats = await getStatsForUser(userId, today);
+  const { todayStr } = getTodayInTimezone(timezone);
+  const stats = await getStatsForUser(userId, timezone);
 
   // Update stats
   stats.totalWordsReviewed += reviewedCount;
@@ -149,8 +158,8 @@ export const updateLearningStats = async ({
   stats.spellingPractice.count += spelledCount;
 
   // Log activity
-  if (!stats.activityLog.includes(today)) {
-    stats.activityLog.push(today);
+  if (!stats.activityLog.includes(todayStr)) {
+    stats.activityLog.push(todayStr);
   }
 
   // Log completed test and award XP
