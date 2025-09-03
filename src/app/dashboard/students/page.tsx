@@ -65,7 +65,7 @@ export default function StudentsPage() {
   const [students, setStudents] = useState<StudentWithStats[]>([]);
   const last7Days = getLast7Days();
   const userId = searchParams.get('userId');
-  const [userTimezone, setUserTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
+  //const [userTimezone, setUserTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
   
   const fetchData = useCallback(async () => {
     if (userId) {
@@ -76,7 +76,7 @@ export default function StudentsPage() {
             const studentList = await getStudentsBySupervisorId(userId);
 
             const studentsWithStatsPromises = studentList.map(async (student) => {
-                const stats = await getStatsForUser(student.id, userTimezone);
+                const stats = await getStatsForUser(student.id);
                 const words = await getWordsForStudent(student.id);
                 const mastered = words.filter(w => w.strength === -1).length;
                 const learning = words.length - mastered;
@@ -92,7 +92,7 @@ export default function StudentsPage() {
             setStudents(studentsWithStats);
         }
     }
-  }, [userId, userTimezone]);
+  }, [userId]);
   
   useEffect(() => {
     fetchData();
@@ -180,7 +180,7 @@ export default function StudentsPage() {
                                       </div>
                                       <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-secondary">
                                           <Clock className="h-8 w-8 text-primary mb-2"/>
-                                          <p className="text-2xl font-bold">{formatTime(student.stats.reviewedToday.timeSpentSeconds)}</p>
+                                          <p className="text-2xl font-bold">{formatTime(student.stats.timeSpentSeconds)}</p>
                                           <p className="text-sm text-muted-foreground">{t('dashboard.student.progressOverview.timeSpent')}</p>
                                       </div>
                                       <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-secondary">
@@ -190,7 +190,7 @@ export default function StudentsPage() {
                                       </div>
                                       <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-secondary">
                                           <CalendarCheck className="h-8 w-8 text-primary mb-2"/>
-                                          <p className="text-2xl font-bold">{student.stats.reviewedToday.count}</p>
+                                          <p className="text-2xl font-bold">{student.stats.reviewedNow}</p>
                                           <p className="text-sm text-muted-foreground">{t('dashboard.student.progressOverview.reviewedToday')}</p>
                                       </div>
                                       <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-secondary">

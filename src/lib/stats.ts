@@ -3,7 +3,6 @@
 'use client';
 
 import { getWeek, startOfWeek } from 'date-fns';
-import { utcToZonedTime, format } from 'date-fns-tz';
 import { XpToast } from '@/components/xp-toast';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
@@ -12,12 +11,6 @@ export type LearningStats = {
   timeSpentSeconds: number;
   totalWordsReviewed: number;
   xp: number;
-  reviewedToday: {
-    count: number;
-    date: string;
-    timeSpentSeconds: number;
-    completedTests: string[];
-  };
   activityLog: string[];
   spellingPractice: {
     count: number;
@@ -25,6 +18,7 @@ export type LearningStats = {
   };
   lastLoginDate: string;
   weekStartDate?: string; // ISO date string for start of the week
+  reviewedNow: number;
 };
 
 export type XpEvent =
@@ -42,29 +36,18 @@ export const XP_AMOUNTS: Record<XpEvent, number> = {
     grammar_test: 20
 };
 
-const getTodayInTimezone = (timezone: string): { todayStr: string, todayDate: Date } => {
-    const now = new Date();
-    const zonedDate = utcToZonedTime(now, timezone);
-    const todayStr = format(zonedDate, 'yyyy-MM-dd', { timeZone: timezone });
-    return { todayStr, todayDate: zonedDate };
-};
-
-
 export const getInitialStats = (today: string): LearningStats => ({
     timeSpentSeconds: 0,
     totalWordsReviewed: 0,
     xp: 0,
-    reviewedToday: { count: 0, date: today, timeSpentSeconds: 0, completedTests: [] },
     activityLog: [],
     spellingPractice: { count: 0, date: today },
     lastLoginDate: '1970-01-01',
     weekStartDate: startOfWeek(new Date(), { weekStartsOn: 1 }).toISOString(), // Monday
+    reviewedNow: 0,
 });
 
-export const getStatsForUser = async (userId: string, timezone: string = 'Asia/Baghdad'): Promise<LearningStats> => {
-    const { todayStr, todayDate } = getTodayInTimezone(timezone);
-    const startOfThisWeek = startOfWeek(todayDate, { weekStartsOn: 1 });
-
+export const getStatsForUser = async (userId: string): Promise<LearningStats> => {
     const statsDocRef = doc(db, `users/${userId}/app-data/stats`);
     const statsSnap = await getDoc(statsDocRef);
 
@@ -73,48 +56,39 @@ export const getStatsForUser = async (userId: string, timezone: string = 'Asia/B
     if (statsSnap.exists()) {
         stats = statsSnap.data() as LearningStats;
     } else {
-        stats = getInitialStats(todayStr);
+        stats = getInitialStats(new Date().toLocaleDateString('en-CA'));
+        // If no stats exist, save the initial stats to Firestore
         await setDoc(statsDocRef, stats);
     }
 
     // --- Data Migration & Defaults ---
     if (typeof stats.xp !== 'number') stats.xp = 0;
     if (!stats.lastLoginDate) stats.lastLoginDate = '1970-01-01';
-    if (!stats.weekStartDate) stats.weekStartDate = startOfThisWeek.toISOString();
+    if (!stats.weekStartDate) stats.weekStartDate = (startOfWeek(new Date(), { weekStartsOn: 1 })).toISOString();
+    if (typeof stats.reviewedNow !== 'number') stats.reviewedNow = 0;
 
     // --- Weekly XP Reset Logic ---
     const lastWeekStartDate = new Date(stats.weekStartDate);
-    if (getWeek(todayDate, { weekStartsOn: 1 }) !== getWeek(lastWeekStartDate, { weekStartsOn: 1 })) {
+    if (getWeek(new Date(), { weekStartsOn: 1 }) !== getWeek(lastWeekStartDate, { weekStartsOn: 1 })) {
         stats.xp = 0; // Reset XP
-        stats.weekStartDate = startOfThisWeek.toISOString();
+        stats.weekStartDate = (startOfWeek(new Date(), { weekStartsOn: 1 })).toISOString();
     }
-
-    // --- Daily Data Reset Logic ---
-    if (!stats.reviewedToday || stats.reviewedToday.date !== todayStr) {
-        stats.reviewedToday = { count: 0, date: todayStr, timeSpentSeconds: 0, completedTests: [] };
-    }
-    if (!stats.spellingPractice || stats.spellingPractice.date !== todayStr) {
-        stats.spellingPractice = { count: 0, date: todayStr };
-    }
-    if (!Array.isArray(stats.activityLog)) stats.activityLog = [];
-    if (!Array.isArray(stats.reviewedToday.completedTests)) stats.reviewedToday.completedTests = [];
-    if (typeof stats.reviewedToday.timeSpentSeconds !== 'number') stats.reviewedToday.timeSpentSeconds = 0;
 
     return stats;
 }
 
-export const updateXp = async (userId: string, event: XpEvent, timezone: string = 'Asia/Baghdad') => {
+export const updateXp = async (userId: string, event: XpEvent) => {
     if (!userId) return { updated: false, amount: 0 };
 
-    const { todayStr } = getTodayInTimezone(timezone);
-    const stats = await getStatsForUser(userId, timezone);
+    const stats = await getStatsForUser(userId);
     const amount = XP_AMOUNTS[event];
-    
+    const today = new Date().toLocaleDateString('en-CA');
+
     if (event === 'daily_login') {
-        if (stats.lastLoginDate === todayStr) {
+        if (stats.lastLoginDate === today) {
             return { updated: false, amount: 0 }; // Already awarded today
         }
-        stats.lastLoginDate = todayStr;
+        stats.lastLoginDate = today;
     }
 
     stats.xp += amount;
@@ -133,7 +107,7 @@ type UpdateStatsParams = {
   testName?: string;
   spelledCount?: number;
   toast?: (props: any) => void;
-  timezone?: string;
+  reviewedNowIncrement?: number;
 };
 
 export const updateLearningStats = async ({
@@ -143,28 +117,26 @@ export const updateLearningStats = async ({
   testName,
   spelledCount = 0,
   toast,
-  timezone = 'Asia/Baghdad',
+  reviewedNowIncrement = 0,
 }: UpdateStatsParams) => {
   if (!userId) return;
-  
-  const { todayStr } = getTodayInTimezone(timezone);
-  const stats = await getStatsForUser(userId, timezone);
+
+  const stats = await getStatsForUser(userId);
+  const today = new Date().toLocaleDateString('en-CA');
 
   // Update stats
   stats.totalWordsReviewed += reviewedCount;
   stats.timeSpentSeconds += durationSeconds;
-  stats.reviewedToday.count += reviewedCount;
-  stats.reviewedToday.timeSpentSeconds += durationSeconds;
   stats.spellingPractice.count += spelledCount;
+  stats.reviewedNow += reviewedNowIncrement;
 
   // Log activity
-  if (!stats.activityLog.includes(todayStr)) {
-    stats.activityLog.push(todayStr);
+  if (!stats.activityLog.includes(today)) {
+    stats.activityLog.push(today);
   }
 
   // Log completed test and award XP
-  if (testName && !stats.reviewedToday.completedTests.includes(testName)) {
-      stats.reviewedToday.completedTests.push(testName);
+  if (testName) {
       stats.xp += XP_AMOUNTS.grammar_test;
       if (toast) {
            toast({

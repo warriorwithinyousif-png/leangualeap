@@ -43,14 +43,14 @@ export function SpellingPracticeCard({ allWords, userId }: SpellingPracticeCardP
   const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<string | null>(null);
   const [spelledToday, setSpelledToday] = useState(0);
-  const [userTimezone, setUserTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
+  //const [userTimezone, setUserTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
 
   const DAILY_LIMIT = 10;
 
   useEffect(() => {
     const loadStats = async () => {
         //const today = new Date().toLocaleDateString('en-CA');
-        const stats = await getStatsForUser(userId, userTimezone);
+        const stats = await getStatsForUser(userId);
 
         //if (stats.spellingPractice?.date === today) {
         //    setSpelledToday(stats.spellingPractice.count);
@@ -62,7 +62,7 @@ export function SpellingPracticeCard({ allWords, userId }: SpellingPracticeCardP
 
     const words = allWords.filter((w) => w.strength && w.strength > 0);
     setPracticeWords(words);
-  }, [allWords, userId, userTimezone]);
+  }, [allWords, userId]);
 
   const uniqueUnits = useMemo(() => {
     return Array.from(new Set(practiceWords.map((word) => word.unit).filter(Boolean)));

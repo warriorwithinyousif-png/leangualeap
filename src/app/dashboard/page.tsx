@@ -74,9 +74,10 @@ export default function Dashboard() {
   const [allStudentWords, setAllStudentWords] = useState<(Word & WordProgress)[]>([]);
   const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<string | null>(null);
-  const [userTimezone, setUserTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
+ // const [userTimezone, setUserTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
   
   const last7Days = getLast7Days();
+   const [reviewedNow, setReviewedNow] = useState(0);
 
   const fetchData = useCallback(async () => {
     if (userId) {
@@ -100,7 +101,9 @@ export default function Dashboard() {
         setWordsMasteredCount(mastered);
         setWordsLearningCount(learning);
         
-        let currentStats = await getStatsForUser(userId, userTimezone);
+        let currentStats = await getStatsForUser(userId);
+         setReviewedNow(currentStats.reviewedNow);
+
         
         // Daily Login XP Check
         const { updated, amount } = await updateXp(userId, 'daily_login');
@@ -110,7 +113,8 @@ export default function Dashboard() {
                 duration: 3000,
             });
             // Refetch stats to include the new XP from daily login
-            currentStats = await getStatsForUser(userId, userTimezone);
+            currentStats = await getStatsForUser(userId);
+             setReviewedNow(currentStats.reviewedNow);
         }
         
         setStats(currentStats);
@@ -121,7 +125,7 @@ export default function Dashboard() {
       }
     }
     setLoading(false);
-  }, [userId, toast, userTimezone]);
+  }, [userId, toast]);
 
   useEffect(() => {
     fetchData();
@@ -243,7 +247,7 @@ export default function Dashboard() {
                     <BarChart className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{stats.reviewedToday.count}</div>
+                    <div className="text-2xl font-bold">{reviewedNow}</div>
                     <p className="text-xs text-muted-foreground">
                         {t('dashboard.student.learningQueue', wordsLearningCount)}
                     </p>
@@ -276,7 +280,7 @@ export default function Dashboard() {
           <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-secondary">
                   <Clock className="h-8 w-8 text-primary mb-2"/>
-                  <p className="text-2xl font-bold">{formatTime(stats.reviewedToday.timeSpentSeconds)}</p>
+                  <p className="text-2xl font-bold">{formatTime(stats.timeSpentSeconds)}</p>
                   <p className="text-sm text-muted-foreground text-center">{t('dashboard.student.progressOverview.timeSpentToday')}</p>
               </div>
               <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-secondary">
@@ -286,7 +290,7 @@ export default function Dashboard() {
               </div>
               <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-secondary">
                   <CalendarCheck className="h-8 w-8 text-primary mb-2"/>
-                  <p className="text-2xl font-bold">{stats.reviewedToday.count}</p>
+                  <p className="text-2xl font-bold">{reviewedNow}</p>
                   <p className="text-sm text-muted-foreground text-center">{t('dashboard.student.progressOverview.reviewedToday')}</p>
               </div>
               <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-secondary">

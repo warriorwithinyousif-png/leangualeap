@@ -1,2 +1,255 @@
-\n\n\'use client\';\n\nimport { getWeek, startOfWeek } from \'date-fns\';\nimport { XpToast } from \'@/components/xp-toast\';\nimport { doc, getDoc, setDoc, getDocs, collection, query, where, Timestamp } from \'firebase/firestore\';\nimport { db } from \'./firebase\';\nimport type { User } from \'./data\';\n\n// Represents the results for a single student from the previous week.\nexport type LastWeekWinner = {\n  id: string;\n  name: string;\n  avatar: string;\n  xp: number;\n  rank: number;\n};\n\nexport type LearningStats = {\n  timeSpentSeconds: number;\n  totalWordsReviewed: number;\n  xp: number;\n  reviewedToday: {\n    count: number;\n    date: string;\n    timeSpentSeconds: number;\n    completedTests: string[];\n  };\n  activityLog: string[];\n  spellingPractice: {\n    count: number;\n    date: string;\n  };\n  lastLoginDate: string;\n  weekStartDate?: string; // ISO date string for start of the week\n  // New fields for weekly results\n  lastWeek?: {\n    weekId: string; // e.g., \"2024-28\"\n    winners: LastWeekWinner[];\n  } | null;\n  hasSeenLastWeekResults?: boolean;\n};\n\nexport type XpEvent =\n  | \'review_word\'\n  | \'spell_correct\'\n  | \'daily_login\'\n  | \'master_word\'\n  | \'grammar_test\';\n\nexport const XP_AMOUNTS: Record<XpEvent, number> = {\n    review_word: 5,\n    spell_correct: 5,\n    daily_login: 20,\n    master_word: 10,\n    grammar_test: 20\n};\n\nexport const getInitialStats = (today: string): LearningStats => ({\n    timeSpentSeconds: 0,\n    totalWordsReviewed: 0,\n    xp: 0,\n    reviewedToday: { count: 0, date: today, timeSpentSeconds: 0, completedTests: [] },\n    activityLog: [],\n    spellingPractice: { count: 0, date: today },\n    lastLoginDate: \'1970-01-01\',\n    weekStartDate: startOfWeek(new Date(), { weekStartsOn: 1 }).toISOString(), // Monday\n    lastWeek: null,\n    hasSeenLastWeekResults: true,\n});\n\nasync function getStudentsAndStatsBySupervisor(supervisorId: string, timezone: string): Promise<{user: User, stats: LearningStats}[]> {\n    const studentQuery = query(collection(db, \"users\"), where(\"supervisorId\", \"==\", supervisorId));\n    const studentSnapshot = await getDocs(studentQuery);\n    \n    const studentsWithStats = await Promise.all(studentSnapshot.docs.map(async (doc) => {\n        const user = { ...doc.data(), id: doc.id } as User;\n        // Pass skipRollover option to prevent infinite loops\n        const stats = await getStatsForUser(user.id, timezone); // Removed skipRollover\n        return { user, stats };\n    }));\n    \n    return studentsWithStats;\n}\n\nexport const getStatsForUser = async (userId: string, timezone: string = \'Asia/Baghdad\'): Promise<LearningStats> => {\n    //const todayStr = today || new Date().toLocaleDateString(\'en-CA\');\n    //const todayDate = today ? new Date(today) : new Date();\n    //const startOfThisWeek = startOfWeek(todayDate, { weekStartsOn: 1 });\n    //const thisWeekId = `${todayDate.getFullYear()}-${getWeek(todayDate, { weekStartsOn: 1 })}`;\n\n    const statsDocRef = doc(db, `users/${userId}/app-data/stats`);\n    const statsSnap = await getDoc(statsDocRef);\n\n    let stats: LearningStats;\n    let currentUser: User | undefined;\n\n    if (statsSnap.exists()) {\n        stats = statsSnap.data() as LearningStats;\n    } else {\
-        stats = getInitialStats(\'1970-01-01\'); // Dummy initial date\n        await setDoc(statsDocRef, stats);\n    }\n\n    // --- Data Migration & Defaults ---\n    if (typeof stats.xp !== \'number\') stats.xp = 0;\n    if (!stats.lastLoginDate) stats.lastLoginDate = \'1970-01-01\';\n    //if (!stats.weekStartDate) stats.weekStartDate = startOfThisWeek.toISOString();\n    if (typeof stats.hasSeenLastWeekResults !== \'boolean\') stats.hasSeenLastWeekResults = true;\n\n    // --- Weekly Rollover Logic ---\n    /*const lastWeekStartDate = new Date(stats.weekStartDate);\n    const lastWeekId = `${lastWeekStartDate.getFullYear()}-${getWeek(lastWeekStartDate, { weekStartsOn: 1 })}`;\n    \n    if (thisWeekId !== lastWeekId && !stats.lastWeek?.weekId?.endsWith(lastWeekId) && !options?.skipRollover) {\n        currentUser = await getUserById(userId);\n        if (currentUser?.supervisorId) {\n            const classmates = await getStudentsAndStatsBySupervisor(currentUser.supervisorId, todayStr);\n            const leaderboard = classmates\n                .map(({ user, stats }) => ({ ...user, xp: stats.xp }))\n                .sort((a, b) => b.xp - a.xp);\n\n            const winners = leaderboard.slice(0, 3).map((player, index) => ({\n                id: player.id,\n                name: player.name,\n                avatar: player.avatar,\n                xp: player.xp,\n                rank: index + 1,\n            }));\n\n            // Update stats for all students in the class\n            for (const { user: student } of classmates) {\n                const studentStatsRef = doc(db, `users/${student.id}/app-data/stats`);\n                await setDoc(studentStatsRef, {\n                    xp: 0,\n                    weekStartDate: startOfThisWeek.toISOString(),\n                    lastWeek: { weekId: lastWeekId, winners },\n                    hasSeenLastWeekResults: false\n                }, { merge: true });\n            }\n            \n            // Reload stats for the current user after update\n            const updatedStatsSnap = await getDoc(statsDocRef);\n            if(updatedStatsSnap.exists()) {\n                 stats = updatedStatsSnap.data() as LearningStats;\n            }\n        }\n    }*/\n\n\n    // --- Daily Data Reset Logic ---\n    //if (!stats.reviewedToday || stats.reviewedToday.date !== todayStr) {\n    //    stats.reviewedToday = { count: 0, date: todayStr, timeSpentSeconds: 0, completedTests: [] };\n    //}\n    //if (!stats.spellingPractice || stats.spellingPractice.date !== todayStr) {\n    //    stats.spellingPractice = { count: 0, date: todayStr };\n    //}\n    if (!Array.isArray(stats.activityLog)) stats.activityLog = [];\n    if (!Array.isArray(stats.reviewedToday.completedTests)) stats.reviewedToday.completedTests = [];\n    if (typeof stats.reviewedToday.timeSpentSeconds !== \'number\') stats.reviewedToday.timeSpentSeconds = 0;\n\n    return stats;\n}\n\nexport const updateXp = async (userId: string, event: XpEvent) => {\n    if (!userId) return { updated: false, amount: 0 };\n\n    //const today = new Date().toLocaleDateString(\'en-CA\');\n    const stats = await getStatsForUser(userId);\n    const amount = XP_AMOUNTS[event];\n    //const today = new Date().toLocaleDateString(\'en-CA\');\n\n    //if (event === \'daily_login\') {\n    //    if (stats.lastLoginDate === today) {\n    //        return { updated: false, amount: 0 }; // Already awarded today\n    //    }\n    //    stats.lastLoginDate = today;\n    //}\n\n    stats.xp += amount;\n\n    const statsDocRef = doc(db, `users/${userId}/app-data/stats`);\n    await setDoc(statsDocRef, stats, { merge: true });\n\n    return { updated: true, amount };\n};\n\n\ntype UpdateStatsParams = {\n  userId: string;\n  reviewedCount?: number;\n  durationSeconds?: number;\n  testName?: string;\n  spelledCount?: number;\n  toast?: (props: any) => void;\n  markAsSeen?: boolean;\n};\n\nexport const updateLearningStats = async ({\n  userId,\n  reviewedCount = 0,\n  durationSeconds = 0,\n  testName,\n  spelledCount = 0,\n  toast,\n  markAsSeen = false,\n}: UpdateStatsParams) => {\n  if (!userId) return;\n\n  //const today = new Date().toLocaleDateString(\'en-CA\');\n  const stats = await getStatsForUser(userId);\n  //const today = new Date().toLocaleDateString(\'en-CA\');\n\n  // Update stats\n  stats.totalWordsReviewed += reviewedCount;\n  stats.timeSpentSeconds += durationSeconds;\n  stats.reviewedToday.count += reviewedCount;\n  stats.reviewedToday.timeSpentSeconds += durationSeconds;\n  stats.spellingPractice.count += spelledCount;\n\n  // Log activity\n  //if (!stats.activityLog.includes(today)) {\n  //  stats.activityLog.push(today);\n  //}\n\n  // Log completed test and award XP\n  if (testName && !stats.reviewedToday.completedTests.includes(testName)) {\n      stats.reviewedToday.completedTests.push(testName);\n      stats.xp += XP_AMOUNTS.grammar_test;\n      if (toast) {\n           toast({\n              description: <XpToast event=\"grammar_test\" amount={XP_AMOUNTS.grammar_test} />,\n              duration: 3000,\n          });\n      }\n  }\n\n  if (markAsSeen) {\n      stats.hasSeenLastWeekResults = true;\n  }\n\n  const statsDocRef = doc(db, `users/${userId}/app-data/stats`);\n  await setDoc(statsDocRef, stats, { merge: true });\n};\n\n\n// Helper function needed for stats rollover\nasync function getUserById(id: string): Promise<User | undefined> {\n    if (!id) return undefined;\n    const userDocRef = doc(db, \'users\', id);\n    const userSnap = await getDoc(userDocRef);\n    if (!userSnap.exists()) return undefined;\n    const data = userSnap.data();\n    if (data.trialExpiresAt && data.trialExpiresAt instanceof Timestamp) {\n        data.trialExpiresAt = data.trialExpiresAt.toDate().toISOString();\n    }\n    return { ...data, id: userSnap.id } as User;\n}\n\n
+
+
+'use client';
+
+import { getWeek, startOfWeek } from 'date-fns';
+import { XpToast } from '@/components/xp-toast';
+import { doc, getDoc, setDoc, getDocs, collection, query, where, Timestamp } from 'firebase/firestore';
+import { db } from './firebase';
+import type { User } from './data';
+
+// Represents the results for a single student from the previous week.
+export type LastWeekWinner = {
+  id: string;
+  name: string;
+  avatar: string;
+  xp: number;
+  rank: number;
+};
+
+export type LearningStats = {
+  timeSpentSeconds: number;
+  totalWordsReviewed: number;
+  xp: number;
+  activityLog: string[];
+  spellingPractice: {
+    count: number;
+    date: string;
+  };
+  lastLoginDate: string;
+  weekStartDate?: string; // ISO date string for start of the week
+  // New fields for weekly results
+  lastWeek?: {
+    weekId: string; // e.g., "2024-28"
+    winners: LastWeekWinner[];
+  } | null;
+  hasSeenLastWeekResults?: boolean;
+  reviewedNow: number;
+};
+
+export type XpEvent =
+  | 'review_word'
+  | 'spell_correct'
+  | 'daily_login'
+  | 'master_word'
+  | 'grammar_test';
+
+export const XP_AMOUNTS: Record<XpEvent, number> = {
+    review_word: 5,
+    spell_correct: 5,
+    daily_login: 20,
+    master_word: 10,
+    grammar_test: 20
+};
+
+export const getInitialStats = (today: string): LearningStats => ({
+    timeSpentSeconds: 0,
+    totalWordsReviewed: 0,
+    xp: 0,
+    activityLog: [],
+    spellingPractice: { count: 0, date: today },
+    lastLoginDate: '1970-01-01',
+    weekStartDate: startOfWeek(new Date(), { weekStartsOn: 1 }).toISOString(), // Monday
+    lastWeek: null,
+    hasSeenLastWeekResults: true,
+    reviewedNow: 0,
+});
+
+async function getStudentsAndStatsBySupervisor(supervisorId: string): Promise<{user: User, stats: LearningStats}[]> {
+    const studentQuery = query(collection(db, "users"), where("supervisorId", "==", supervisorId));
+    const studentSnapshot = await getDocs(studentQuery);
+    
+    const studentsWithStats = await Promise.all(studentSnapshot.docs.map(async (doc) => {
+        const user = { ...doc.data(), id: doc.id } as User;
+        const stats = await getStatsForUser(user.id);
+        return { user, stats };
+    }));
+    
+    return studentsWithStats;
+}
+
+export const getStatsForUser = async (userId: string): Promise<LearningStats> => {
+    const today = new Date();
+    const todayStr = today.toLocaleDateString('en-CA');
+    const startOfThisWeek = startOfWeek(today, { weekStartsOn: 1 });
+    const thisWeekId = `${today.getFullYear()}-${getWeek(today, { weekStartsOn: 1 })}`;
+
+    const statsDocRef = doc(db, `users/${userId}/app-data/stats`);
+    const statsSnap = await getDoc(statsDocRef);
+
+    let stats: LearningStats;
+    let currentUser: User | undefined;
+
+    if (statsSnap.exists()) {
+        stats = statsSnap.data() as LearningStats;
+    } else {
+        stats = getInitialStats(todayStr);
+        await setDoc(statsDocRef, stats);
+    }
+
+    // --- Data Migration & Defaults ---
+    if (typeof stats.xp !== 'number') stats.xp = 0;
+    if (!stats.lastLoginDate) stats.lastLoginDate = '1970-01-01';
+    if (!stats.weekStartDate) stats.weekStartDate = startOfThisWeek.toISOString();
+    if (typeof stats.hasSeenLastWeekResults !== 'boolean') stats.hasSeenLastWeekResults = true;
+    if (typeof stats.reviewedNow !== 'number') stats.reviewedNow = 0;
+
+    // --- Weekly Rollover Logic ---
+    const lastWeekStartDate = new Date(stats.weekStartDate);
+    const lastWeekId = `${lastWeekStartDate.getFullYear()}-${getWeek(lastWeekStartDate, { weekStartsOn: 1 })}`;
+    
+    if (thisWeekId !== lastWeekId && !stats.lastWeek?.weekId?.endsWith(lastWeekId)) {
+        currentUser = await getUserById(userId);
+        if (currentUser?.supervisorId) {
+            const classmates = await getStudentsAndStatsBySupervisor(currentUser.supervisorId);
+            const leaderboard = classmates
+                .map(({ user, stats }) => ({ ...user, xp: stats.xp }))
+                .sort((a, b) => b.xp - a.xp);
+
+            const winners = leaderboard.slice(0, 3).map((player, index) => ({
+                id: player.id,
+                name: player.name,
+                avatar: player.avatar,
+                xp: player.xp,
+                rank: index + 1,
+            }));
+
+            // Update stats for all students in the class
+            for (const { user: student } of classmates) {
+                const studentStatsRef = doc(db, `users/${student.id}/app-data/stats`);
+                await setDoc(studentStatsRef, {
+                    xp: 0,
+                    weekStartDate: startOfThisWeek.toISOString(),
+                    lastWeek: { weekId: lastWeekId, winners },
+                    hasSeenLastWeekResults: false,
+                    reviewedNow: 0,
+                }, { merge: true });
+            }
+            
+            // Reload stats for the current user after update
+            const updatedStatsSnap = await getDoc(statsDocRef);
+            if(updatedStatsSnap.exists()) {
+                 stats = updatedStatsSnap.data() as LearningStats;
+            }
+        }
+    }
+
+
+    // --- Daily Data Reset Logic ---
+    /*if (!stats.reviewedToday || stats.reviewedToday.date !== todayStr) {
+        stats.reviewedToday = { count: 0, date: todayStr, timeSpentSeconds: 0, completedTests: [] };
+    }
+    if (!stats.spellingPractice || stats.spellingPractice.date !== todayStr) {
+        stats.spellingPractice = { count: 0, date: todayStr };
+    }*/
+    if (!Array.isArray(stats.activityLog)) stats.activityLog = [];
+    if (!Array.isArray(stats.reviewedToday.completedTests)) stats.reviewedToday.completedTests = [];
+    if (typeof stats.reviewedToday.timeSpentSeconds !== 'number') stats.reviewedToday.timeSpentSeconds = 0;
+
+    return stats;
+}
+
+export const updateXp = async (userId: string, event: XpEvent) => {
+    if (!userId) return { updated: false, amount: 0 };
+
+    const stats = await getStatsForUser(userId);
+    const amount = XP_AMOUNTS[event];
+    const today = new Date().toLocaleDateString('en-CA');
+
+    if (event === 'daily_login') {
+        if (stats.lastLoginDate === today) {
+            return { updated: false, amount: 0 }; // Already awarded today
+        }
+        stats.lastLoginDate = today;
+    }
+
+    stats.xp += amount;
+
+    const statsDocRef = doc(db, `users/${userId}/app-data/stats`);
+    await setDoc(statsDocRef, stats, { merge: true });
+
+    return { updated: true, amount };
+};
+
+
+type UpdateStatsParams = {
+  userId: string;
+  reviewedCount?: number;
+  durationSeconds?: number;
+  testName?: string;
+  spelledCount?: number;
+  toast?: (props: any) => void;
+  markAsSeen?: boolean;
+  reviewedNowIncrement?: number;
+};
+
+export const updateLearningStats = async ({
+  userId,
+  reviewedCount = 0,
+  durationSeconds = 0,
+  testName,
+  spelledCount = 0,
+  toast,
+  markAsSeen = false,
+  reviewedNowIncrement = 0,
+}: UpdateStatsParams) => {
+  if (!userId) return;
+
+  const today = new Date().toLocaleDateString('en-CA');
+  const stats = await getStatsForUser(userId);
+
+  // Update stats
+  stats.totalWordsReviewed += reviewedCount;
+  stats.timeSpentSeconds += durationSeconds;
+  //stats.reviewedToday.count += reviewedCount;
+  //stats.reviewedToday.timeSpentSeconds += durationSeconds;
+  stats.spellingPractice.count += spelledCount;
+  stats.reviewedNow += reviewedNowIncrement;
+
+  // Log activity
+  if (!stats.activityLog.includes(today)) {
+    stats.activityLog.push(today);
+  }
+
+  // Log completed test and award XP
+  if (testName) {
+      stats.xp += XP_AMOUNTS.grammar_test;
+      if (toast) {
+           toast({
+              description: <XpToast event="grammar_test" amount={XP_AMOUNTS.grammar_test} />,
+              duration: 3000,
+          });
+      }
+  }
+
+  if (markAsSeen) {
+      stats.hasSeenLastWeekResults = true;
+  }
+
+  const statsDocRef = doc(db, `users/${userId}/app-data/stats`);
+  await setDoc(statsDocRef, stats, { merge: true });
+};
+
+
+// Helper function needed for stats rollover
+async function getUserById(id: string): Promise<User | undefined> {
+    if (!id) return undefined;
+    const userDocRef = doc(db, 'users', id);
+    const userSnap = await getDoc(userDocRef);
+    if (!userSnap.exists()) return undefined;
+    const data = userSnap.data();
+    if (data.trialExpiresAt && data.trialExpiresAt instanceof Timestamp) {
+        data.trialExpiresAt = data.trialExpiresAt.toDate().toISOString();
+    }
+    return { ...data, id: userSnap.id } as User;
+}

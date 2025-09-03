@@ -28,7 +28,7 @@ export default function ChampionPage() {
     const { t, language } = useLanguage();
     const [lastWeekResults, setLastWeekResults] = useState<LastWeekWinner[] | null>(null);
     const [showWinners, setShowWinners] = useState(false);
-     const [userTimezone, setUserTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
+     //const [userTimezone, setUserTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
 
 
     useEffect(() => {
@@ -36,7 +36,7 @@ export default function ChampionPage() {
             if (userId) {
                // const today = new Date().toLocaleDateString('en-CA');
                 const currentUser = await getUserById(userId);
-                 const stats = await getStatsForUser(userId, userTimezone);
+                 const stats = await getStatsForUser(userId);
 
                 if (!stats.hasSeenLastWeekResults && stats.lastWeek?.winners) {
                     setLastWeekResults(stats.lastWeek.winners);
@@ -53,7 +53,7 @@ export default function ChampionPage() {
                     }
 
                     const leaderboardDataPromises = Array.from(userMap.values()).map(async (student) => {
-                         const studentStats = await getStatsForUser(student.id, userTimezone);
+                         const studentStats = await getStatsForUser(student.id);
                          return {
                              ...student,
                              xp: studentStats.xp || 0
@@ -80,7 +80,7 @@ export default function ChampionPage() {
 
         return () => clearInterval(timer);
         
-    }, [userId, language, userTimezone]);
+    }, [userId, language]);
     
     const handleCloseWinnersCircle = () => {
         setShowWinners(false);
