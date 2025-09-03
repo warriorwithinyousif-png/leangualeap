@@ -26,7 +26,7 @@ import { useLanguage } from "@/hooks/use-language";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
-import { format, subDays, formatDistanceToNowStrict, isPast, isToday } from "date-fns";
+import { format, subDays, formatDistanceToNowStrict, isPast } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { SpellingPracticeCard } from "@/components/spelling-practice-card";
-import { type LearningStats, updateXp, XP_AMOUNTS, getStatsForUser } from "@/lib/stats";
+import { type LearningStats, updateXp, XP_AMOUNTS, getStatsForUser } from "@/lib/stats.tsx";
 import { useToast } from "@/hooks/use-toast";
 import { XpToast } from "@/components/xp-toast";
 import { WordProgress } from "@/lib/storage";
@@ -74,25 +74,24 @@ export default function Dashboard() {
   const [allStudentWords, setAllStudentWords] = useState<(Word & WordProgress)[]>([]);
   const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<string | null>(null);
- // const [userTimezone, setUserTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
   
   const last7Days = getLast7Days();
-   const [reviewedNow, setReviewedNow] = useState(0);
 
   const fetchData = useCallback(async () => {
     if (userId) {
       setLoading(true);
-      //const today = new Date().toLocaleDateString('en-CA');
       const foundUser = await getUserById(userId);
       setUser(foundUser || null);
       
       if (foundUser?.role === 'student') {
         const words = await getWordsForStudent(userId);
         setAllStudentWords(words);
+        
+        const todayString = format(new Date(), 'yyyy-MM-dd');
 
         // CORRECTED LOGIC: Sync these counts with the respective page logic
         const toReview = words.filter(w => new Date(w.nextReview) <= new Date() && w.strength >= 0).length;
-        const todayCount = words.filter(w => isToday(new Date(w.nextReview)) && w.strength >= 0).length;
+        const todayCount = words.filter(w => format(new Date(w.nextReview), 'yyyy-MM-dd') === todayString && w.strength >= 0).length;
         const mastered = words.filter(w => w.strength === -1).length;
         const learning = words.filter(w => w.strength >= 0 && new Date(w.nextReview) > new Date()).length;
 
@@ -102,8 +101,6 @@ export default function Dashboard() {
         setWordsLearningCount(learning);
         
         let currentStats = await getStatsForUser(userId);
-         setReviewedNow(currentStats.reviewedNow);
-
         
         // Daily Login XP Check
         const { updated, amount } = await updateXp(userId, 'daily_login');
@@ -114,7 +111,6 @@ export default function Dashboard() {
             });
             // Refetch stats to include the new XP from daily login
             currentStats = await getStatsForUser(userId);
-             setReviewedNow(currentStats.reviewedNow);
         }
         
         setStats(currentStats);
@@ -247,7 +243,7 @@ export default function Dashboard() {
                     <BarChart className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{reviewedNow}</div>
+                    <div className="text-2xl font-bold">{stats.reviewedToday.count}</div>
                     <p className="text-xs text-muted-foreground">
                         {t('dashboard.student.learningQueue', wordsLearningCount)}
                     </p>
@@ -280,7 +276,7 @@ export default function Dashboard() {
           <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-secondary">
                   <Clock className="h-8 w-8 text-primary mb-2"/>
-                  <p className="text-2xl font-bold">{formatTime(stats.timeSpentSeconds)}</p>
+                  <p className="text-2xl font-bold">{formatTime(stats.reviewedToday.timeSpentSeconds)}</p>
                   <p className="text-sm text-muted-foreground text-center">{t('dashboard.student.progressOverview.timeSpentToday')}</p>
               </div>
               <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-secondary">
@@ -290,7 +286,7 @@ export default function Dashboard() {
               </div>
               <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-secondary">
                   <CalendarCheck className="h-8 w-8 text-primary mb-2"/>
-                  <p className="text-2xl font-bold">{reviewedNow}</p>
+                  <p className="text-2xl font-bold">{stats.reviewedToday.count}</p>
                   <p className="text-sm text-muted-foreground text-center">{t('dashboard.student.progressOverview.reviewedToday')}</p>
               </div>
               <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-secondary">
