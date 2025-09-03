@@ -8,7 +8,7 @@ import { getUserById, getStudentsBySupervisorId } from "@/lib/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import { Trophy } from "lucide-react";
-import { type LearningStats, getStatsForUser, type LastWeekWinner, updateLearningStats } from "@/lib/stats.tsx";
+import { type LearningStats, getStatsForUser, type LastWeekWinner, updateLearningStats } from "@/lib/stats";
 import { cn } from "@/lib/utils";
 import { endOfWeek, formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -33,8 +33,9 @@ export default function ChampionPage() {
     useEffect(() => {
         const fetchData = async () => {
             if (userId) {
+                const today = new Date().toLocaleDateString('en-CA');
                 const currentUser = await getUserById(userId);
-                 const stats = await getStatsForUser(userId);
+                 const stats = await getStatsForUser(userId, today);
 
                 if (!stats.hasSeenLastWeekResults && stats.lastWeek?.winners) {
                     setLastWeekResults(stats.lastWeek.winners);
@@ -51,7 +52,7 @@ export default function ChampionPage() {
                     }
 
                     const leaderboardDataPromises = Array.from(userMap.values()).map(async (student) => {
-                         const studentStats = await getStatsForUser(student.id);
+                         const studentStats = await getStatsForUser(student.id, today);
                          return {
                              ...student,
                              xp: studentStats.xp || 0

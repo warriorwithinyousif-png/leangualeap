@@ -4,7 +4,7 @@
 
 import { getWeek, startOfWeek } from 'date-fns';
 import { XpToast } from '@/components/xp-toast';
-import { doc, getDoc, setDoc, getDocs, collection } from 'firebase/firestore';
+import { doc, getDoc, setDoc, getDocs, collection, query, where, Timestamp } from 'firebase/firestore';
 import { db } from './firebase';
 import type { User } from './data';
 
@@ -70,24 +70,25 @@ export const getInitialStats = (today: string): LearningStats => ({
     hasSeenLastWeekResults: true,
 });
 
-async function getStudentsAndStatsBySupervisor(supervisorId: string): Promise<{user: User, stats: LearningStats}[]> {
+async function getStudentsAndStatsBySupervisor(supervisorId: string, today: string): Promise<{user: User, stats: LearningStats}[]> {
     const studentQuery = query(collection(db, "users"), where("supervisorId", "==", supervisorId));
     const studentSnapshot = await getDocs(studentQuery);
     
     const studentsWithStats = await Promise.all(studentSnapshot.docs.map(async (doc) => {
         const user = { ...doc.data(), id: doc.id } as User;
-        const stats = await getStatsForUser(user.id);
+        // Pass skipRollover option to prevent infinite loops
+        const stats = await getStatsForUser(user.id, today, { skipRollover: true });
         return { user, stats };
     }));
     
     return studentsWithStats;
 }
 
-export const getStatsForUser = async (userId: string): Promise<LearningStats> => {
-    const today = new Date();
-    const todayStr = today.toLocaleDateString('en-CA');
-    const startOfThisWeek = startOfWeek(today, { weekStartsOn: 1 });
-    const thisWeekId = `${today.getFullYear()}-${getWeek(today, { weekStartsOn: 1 })}`;
+export const getStatsForUser = async (userId: string, today?: string, options?: { skipRollover?: boolean }): Promise<LearningStats> => {
+    const todayStr = today || new Date().toLocaleDateString('en-CA');
+    const todayDate = today ? new Date(today) : new Date();
+    const startOfThisWeek = startOfWeek(todayDate, { weekStartsOn: 1 });
+    const thisWeekId = `${todayDate.getFullYear()}-${getWeek(todayDate, { weekStartsOn: 1 })}`;
 
     const statsDocRef = doc(db, `users/${userId}/app-data/stats`);
     const statsSnap = await getDoc(statsDocRef);
@@ -112,10 +113,10 @@ export const getStatsForUser = async (userId: string): Promise<LearningStats> =>
     const lastWeekStartDate = new Date(stats.weekStartDate);
     const lastWeekId = `${lastWeekStartDate.getFullYear()}-${getWeek(lastWeekStartDate, { weekStartsOn: 1 })}`;
     
-    if (thisWeekId !== lastWeekId && !stats.lastWeek?.weekId?.endsWith(lastWeekId)) {
+    if (thisWeekId !== lastWeekId && !stats.lastWeek?.weekId?.endsWith(lastWeekId) && !options?.skipRollover) {
         currentUser = await getUserById(userId);
         if (currentUser?.supervisorId) {
-            const classmates = await getStudentsAndStatsBySupervisor(currentUser.supervisorId);
+            const classmates = await getStudentsAndStatsBySupervisor(currentUser.supervisorId, todayStr);
             const leaderboard = classmates
                 .map(({ user, stats }) => ({ ...user, xp: stats.xp }))
                 .sort((a, b) => b.xp - a.xp);
@@ -165,9 +166,9 @@ export const getStatsForUser = async (userId: string): Promise<LearningStats> =>
 export const updateXp = async (userId: string, event: XpEvent) => {
     if (!userId) return { updated: false, amount: 0 };
 
-    const stats = await getStatsForUser(userId);
-    const amount = XP_AMOUNTS[event];
     const today = new Date().toLocaleDateString('en-CA');
+    const stats = await getStatsForUser(userId, today);
+    const amount = XP_AMOUNTS[event];
 
     if (event === 'daily_login') {
         if (stats.lastLoginDate === today) {
@@ -206,8 +207,8 @@ export const updateLearningStats = async ({
 }: UpdateStatsParams) => {
   if (!userId) return;
 
-  const stats = await getStatsForUser(userId);
   const today = new Date().toLocaleDateString('en-CA');
+  const stats = await getStatsForUser(userId, today);
 
   // Update stats
   stats.totalWordsReviewed += reviewedCount;

@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { SpellingPracticeCard } from "@/components/spelling-practice-card";
-import { type LearningStats, updateXp, XP_AMOUNTS, getStatsForUser } from "@/lib/stats.tsx";
+import { type LearningStats, updateXp, XP_AMOUNTS, getStatsForUser } from "@/lib/stats";
 import { useToast } from "@/hooks/use-toast";
 import { XpToast } from "@/components/xp-toast";
 import { WordProgress } from "@/lib/storage";
@@ -48,7 +48,7 @@ const getLast7Days = () => {
   for (let i = 0; i < 7; i++) {
     const day = subDays(new Date(), i);
     days.push({
-      date: format(day, "yyyy-MM-dd"),
+      date: day.toLocaleDateString('en-CA'),
       dayInitial: format(day, "E")[0], // 'M', 'T', 'W', etc.
     });
   }
@@ -80,6 +80,7 @@ export default function Dashboard() {
   const fetchData = useCallback(async () => {
     if (userId) {
       setLoading(true);
+      const today = new Date().toLocaleDateString('en-CA');
       const foundUser = await getUserById(userId);
       setUser(foundUser || null);
       
@@ -98,7 +99,7 @@ export default function Dashboard() {
         setWordsMasteredCount(mastered);
         setWordsLearningCount(learning);
         
-        let currentStats = await getStatsForUser(userId);
+        let currentStats = await getStatsForUser(userId, today);
         
         // Daily Login XP Check
         const { updated, amount } = await updateXp(userId, 'daily_login');
@@ -108,7 +109,7 @@ export default function Dashboard() {
                 duration: 3000,
             });
             // Refetch stats to include the new XP from daily login
-            currentStats = await getStatsForUser(userId);
+            currentStats = await getStatsForUser(userId, today);
         }
         
         setStats(currentStats);
@@ -234,7 +235,7 @@ export default function Dashboard() {
             </Card>
             <Link href={`/dashboard/learning-words?userId=${user.id}`} className="hover:opacity-90 transition-opacity">
                 <Card>
-                <CardHeader className="flex flex-row items-center justify-.tsx
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">
                          {t('dashboard.student.progressOverview.reviewedToday')}
                     </CardTitle>
@@ -287,7 +288,7 @@ export default function Dashboard() {
                   <p className="text-2xl font-bold">{stats.reviewedToday.count}</p>
                   <p className="text-sm text-muted-foreground text-center">{t('dashboard.student.progressOverview.reviewedToday')}</p>
               </div>
-              <div className="flex flex-col items-center justify-center p-4 rounded-.tsx ag bg-secondary">
+              <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-secondary">
                   <Trophy className="h-8 w-8 text-primary mb-2"/>
                   <p className="text-2xl font-bold">{wordsMasteredCount}</p>
                   <p className="text-sm text-muted-foreground text-center">{t('dashboard.student.progressOverview.masteredWords')}</p>

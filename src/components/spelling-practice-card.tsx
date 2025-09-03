@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { updateStudentProgressInStorage } from "@/lib/storage";
 import { type WordProgress } from "@/lib/storage";
-import { updateLearningStats, updateXp, XP_AMOUNTS, getStatsForUser } from "@/lib/stats.tsx";
+import { updateLearningStats, updateXp, XP_AMOUNTS, getStatsForUser } from "@/lib/stats";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { XpToast } from "./xp-toast";
 import { useLanguage } from "@/hooks/use-language";
@@ -48,8 +48,8 @@ export function SpellingPracticeCard({ allWords, userId }: SpellingPracticeCardP
 
   useEffect(() => {
     const loadStats = async () => {
-        const stats = await getStatsForUser(userId);
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toLocaleDateString('en-CA');
+        const stats = await getStatsForUser(userId, today);
 
         if (stats.spellingPractice?.date === today) {
             setSpelledToday(stats.spellingPractice.count);

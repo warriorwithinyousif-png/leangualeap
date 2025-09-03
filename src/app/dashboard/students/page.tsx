@@ -33,7 +33,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { format, subDays } from "date-fns";
 import Link from "next/link";
 import { Checkbox } from "@/components/ui/checkbox";
-import { type LearningStats, getStatsForUser } from "@/lib/stats.tsx";
+import { type LearningStats, getStatsForUser } from "@/lib/stats";
 
 type StudentWithStats = User & {
     stats: LearningStats;
@@ -46,7 +46,7 @@ const getLast7Days = () => {
   for (let i = 0; i < 7; i++) {
     const day = subDays(new Date(), i);
     days.push({
-      date: format(day, "yyyy-MM-dd"),
+      date: day.toLocaleDateString('en-CA'),
       dayInitial: format(day, "E")[0], // 'M', 'T', 'W', etc.
     });
   }
@@ -68,13 +68,14 @@ export default function StudentsPage() {
   
   const fetchData = useCallback(async () => {
     if (userId) {
+        const today = new Date().toLocaleDateString('en-CA');
         const currentUser = await getUserById(userId);
         setUser(currentUser || null);
         if (currentUser) {
             const studentList = await getStudentsBySupervisorId(userId);
 
             const studentsWithStatsPromises = studentList.map(async (student) => {
-                const stats = await getStatsForUser(student.id);
+                const stats = await getStatsForUser(student.id, today);
                 const words = await getWordsForStudent(student.id);
                 const mastered = words.filter(w => w.strength === -1).length;
                 const learning = words.length - mastered;
