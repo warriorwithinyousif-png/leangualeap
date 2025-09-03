@@ -167,7 +167,7 @@ export default function Dashboard() {
         <h1 className="text-3xl font-bold font-headline">{t('dashboard.student.welcome', user.name)}</h1>
         <p className="text-muted-foreground">{t('dashboard.student.description')}</p>
         
-        <Button asChild size="lg" className="w-full" disabled={todaysReviewCount === 0}>
+        <Button asChild size="lg" className="w-full">
           <Link href={`/learn?userId=${user.id}&review_type=today`}>
             Today's Reviews
             <Badge variant="secondary" className="ml-2">{todaysReviewCount}</Badge>
