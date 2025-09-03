@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import {
@@ -19,14 +18,14 @@ import {
 } from "@/components/ui/table";
 import { getWordsForStudent, getUserById, getStudentsBySupervisorId } from "@/lib/firestore";
 import { type Word, type User } from "@/lib/data";
-import { KeyRound, Clock, BarChart, CalendarCheck, Trophy, CheckCircle, XCircle, SpellCheck, ChevronDown, Star, Loader2 } from "lucide-react";
+import { KeyRound, Clock, BarChart, CalendarCheck, Trophy, CheckCircle, XCircle, SpellCheck, Star, Loader2, Target } from "lucide-react";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/hooks/use-language";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
-import { format, subDays, formatDistanceToNowStrict, isPast } from "date-fns";
+import { format, subDays, formatDistanceToNowStrict, isPast, isToday } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -60,18 +59,18 @@ const allTests = ["Present Simple", "Past Simple", "Present Continuous", "Compre
 export default function Dashboard() {
   const searchParams = useSearchParams();
   const userId = searchParams.get('userId');
-  const { t } = useLanguage();
+  const { t, translateContent } = useLanguage();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [students, setStudents] = useState<User[]>([]);
   const [stats, setStats] = useState<LearningStats | null>(null);
-  const [wordsToReviewCount, setWordsToReviewCount] = useState(0);
   const [todaysReviewCount, setTodaysReviewCount] = useState(0);
   const [wordsLearningCount, setWordsLearningCount] = useState(0);
   const [wordsMasteredCount, setWordsMasteredCount] = useState(0);
   
   const [allStudentWords, setAllStudentWords] = useState<(Word & WordProgress)[]>([]);
+
   const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<string | null>(null);
   
@@ -86,30 +85,23 @@ export default function Dashboard() {
       if (foundUser?.role === 'student') {
         const words = await getWordsForStudent(userId);
         setAllStudentWords(words);
-        
-        const todayString = format(new Date(), 'yyyy-MM-dd');
 
-        // CORRECTED LOGIC: Sync these counts with the respective page logic
-        const toReview = words.filter(w => new Date(w.nextReview) <= new Date() && w.strength >= 0).length;
-        const todayCount = words.filter(w => format(new Date(w.nextReview), 'yyyy-MM-dd') === todayString && w.strength >= 0).length;
+        const todayCount = words.filter(w => isToday(new Date(w.nextReview)) && w.strength >= 0).length;
         const mastered = words.filter(w => w.strength === -1).length;
-        const learning = words.filter(w => w.strength >= 0 && new Date(w.nextReview) > new Date()).length;
+        const learning = words.filter(w => w.strength > 0 && !isPast(new Date(w.nextReview))).length;
 
-        setWordsToReviewCount(toReview);
         setTodaysReviewCount(todayCount);
         setWordsMasteredCount(mastered);
         setWordsLearningCount(learning);
         
         let currentStats = await getStatsForUser(userId);
         
-        // Daily Login XP Check
         const { updated, amount } = await updateXp(userId, 'daily_login');
         if (updated) {
             toast({
                 description: <XpToast event="daily_login" amount={amount} />,
                 duration: 3000,
             });
-            // Refetch stats to include the new XP from daily login
             currentStats = await getStatsForUser(userId);
         }
         
@@ -127,19 +119,26 @@ export default function Dashboard() {
     fetchData();
   }, [fetchData]);
 
-  const availableUnits = useMemo(() => {
-    return Array.from(new Set(allStudentWords.map(w => w.unit).filter(Boolean)));
+  const newWords = useMemo(() => {
+    return allStudentWords.filter(w => w.strength === 0);
   }, [allStudentWords]);
   
+  const availableUnits = useMemo(() => {
+    return Array.from(new Set(newWords.map(w => w.unit).filter(Boolean)));
+  }, [newWords]);
+
   const lessonsForSelectedUnit = useMemo(() => {
     if (!selectedUnit) return [];
-    return Array.from(new Set(allStudentWords.filter(w => w.unit === selectedUnit).map(w => w.lesson).filter(Boolean)));
-  }, [allStudentWords, selectedUnit]);
-  
+    return Array.from(new Set(newWords.filter(w => w.unit === selectedUnit).map(w => w.lesson).filter(Boolean)));
+  }, [newWords, selectedUnit]);
+
   const handleUnitChange = (unit: string) => {
     setSelectedUnit(unit);
     setSelectedLesson(null);
-  }
+  };
+  
+  const isLearnButtonDisabled = !selectedUnit || !selectedLesson;
+
 
   const formatTime = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);
@@ -159,40 +158,31 @@ export default function Dashboard() {
     );
   }
 
-  const isReviewButtonDisabled = !selectedUnit || !selectedLesson;
-
   if (user?.role === "student") {
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold font-headline">{t('dashboard.student.welcome', user.name)}</h1>
         <p className="text-muted-foreground">{t('dashboard.student.description')}</p>
-        
-        <Button asChild size="lg" className="w-full">
-          <Link href={`/learn?userId=${user.id}&review_type=today`}>
-            Today's Reviews
-            <Badge variant="secondary" className="ml-2">{todaysReviewCount}</Badge>
-          </Link>
-        </Button>
 
-         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-             <Card>
+         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+            <Card className="h-full">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">
-                        {t('dashboard.student.reviewTitle')}
+                        {t('sidebar.learn')}
                     </CardTitle>
-                    <CalendarCheck className="h-4 w-4 text-muted-foreground" />
+                    <Target className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{wordsToReviewCount}</div>
-                    <p className="text-xs text-muted-foreground pb-2">{t('dashboard.student.reviewDescription')}</p>
-                     <div className="space-y-2">
+                    <div className="text-2xl font-bold">{newWords.length}</div>
+                    <p className="text-xs text-muted-foreground pb-2">New words to learn</p>
+                     <div className="space-y-2 mt-2">
                         <Select onValueChange={handleUnitChange} disabled={availableUnits.length === 0}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Select a Unit" />
                             </SelectTrigger>
                             <SelectContent>
                                 {availableUnits.map(unit => (
-                                    <SelectItem key={unit} value={unit}>{unit}</SelectItem>
+                                    <SelectItem key={unit} value={unit}>{translateContent(unit)}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -202,11 +192,11 @@ export default function Dashboard() {
                             </SelectTrigger>
                             <SelectContent>
                                 {lessonsForSelectedUnit.map(lesson => (
-                                    <SelectItem key={lesson} value={lesson}>{lesson}</SelectItem>
+                                    <SelectItem key={lesson} value={lesson}>{translateContent(lesson)}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
-                        {isReviewButtonDisabled ? (
+                        {isLearnButtonDisabled ? (
                             <Button className="w-full" disabled>
                                 {t('dashboard.student.startReview')}
                             </Button>
@@ -220,10 +210,24 @@ export default function Dashboard() {
                     </div>
                 </CardContent>
             </Card>
-            <Card>
+             <Link href={`/dashboard/todays-reviews?userId=${user.id}`} className="hover:opacity-90 transition-opacity">
+                <Card className="h-full">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">
+                            {t('sidebar.todaysReviews')}
+                        </CardTitle>
+                        <CalendarCheck className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{todaysReviewCount}</div>
+                        <p className="text-xs text-muted-foreground pb-2">Words scheduled for review today.</p>
+                    </CardContent>
+                </Card>
+            </Link>
+             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">
-                         Total XP
+                        Total XP
                     </CardTitle>
                     <Star className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
@@ -235,19 +239,19 @@ export default function Dashboard() {
                 </CardContent>
             </Card>
             <Link href={`/dashboard/learning-words?userId=${user.id}`} className="hover:opacity-90 transition-opacity">
-                <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                         {t('dashboard.student.progressOverview.reviewedToday')}
-                    </CardTitle>
-                    <BarChart className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{stats.reviewedToday.count}</div>
-                    <p className="text-xs text-muted-foreground">
-                        {t('dashboard.student.learningQueue', wordsLearningCount)}
-                    </p>
-                </CardContent>
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">
+                            {t('sidebar.learningWords')}
+                        </CardTitle>
+                        <BarChart className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{wordsLearningCount}</div>
+                        <p className="text-xs text-muted-foreground">
+                             {t('dashboard.student.learningQueue', wordsLearningCount)}
+                        </p>
+                    </CardContent>
                 </Card>
             </Link>
             <Link href={`/dashboard/mastered-words?userId=${user.id}`} className="hover:opacity-90 transition-opacity">
@@ -433,3 +437,6 @@ export default function Dashboard() {
 
    return <div>{t('dashboard.loading')}</div>
  }
+    
+    
+	

@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { updateStudentProgressInStorage } from "@/lib/storage";
 import { type WordProgress } from "@/lib/storage";
-import { updateLearningStats, updateXp, XP_AMOUNTS, getStatsForUser } from "@/lib/stats";
+import { updateLearningStats, updateXp, XP_AMOUNTS, getStatsForUser } from "@/lib/stats.tsx";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { XpToast } from "./xp-toast";
 import { useLanguage } from "@/hooks/use-language";
@@ -43,20 +43,19 @@ export function SpellingPracticeCard({ allWords, userId }: SpellingPracticeCardP
   const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<string | null>(null);
   const [spelledToday, setSpelledToday] = useState(0);
-  //const [userTimezone, setUserTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
 
   const DAILY_LIMIT = 10;
 
   useEffect(() => {
     const loadStats = async () => {
-        //const today = new Date().toLocaleDateString('en-CA');
         const stats = await getStatsForUser(userId);
+        const today = new Date().toISOString().split('T')[0];
 
-        //if (stats.spellingPractice?.date === today) {
-        //    setSpelledToday(stats.spellingPractice.count);
-        //} else {
-        //    setSpelledToday(0);
-        //}
+        if (stats.spellingPractice?.date === today) {
+            setSpelledToday(stats.spellingPractice.count);
+        } else {
+            setSpelledToday(0);
+        }
     }
     loadStats();
 

@@ -11,6 +11,12 @@ export type LearningStats = {
   timeSpentSeconds: number;
   totalWordsReviewed: number;
   xp: number;
+  reviewedToday: {
+    count: number;
+    date: string;
+    timeSpentSeconds: number;
+    completedTests: string[];
+  };
   activityLog: string[];
   spellingPractice: {
     count: number;
@@ -18,7 +24,6 @@ export type LearningStats = {
   };
   lastLoginDate: string;
   weekStartDate?: string; // ISO date string for start of the week
-  reviewedNow: number;
 };
 
 export type XpEvent =
@@ -40,14 +45,18 @@ export const getInitialStats = (today: string): LearningStats => ({
     timeSpentSeconds: 0,
     totalWordsReviewed: 0,
     xp: 0,
+    reviewedToday: { count: 0, date: today, timeSpentSeconds: 0, completedTests: [] },
     activityLog: [],
     spellingPractice: { count: 0, date: today },
     lastLoginDate: '1970-01-01',
     weekStartDate: startOfWeek(new Date(), { weekStartsOn: 1 }).toISOString(), // Monday
-    reviewedNow: 0,
 });
 
 export const getStatsForUser = async (userId: string): Promise<LearningStats> => {
+    const today = new Date();
+    const todayStr = today.toLocaleDateString('en-CA');
+    const startOfThisWeek = startOfWeek(today, { weekStartsOn: 1 });
+
     const statsDocRef = doc(db, `users/${userId}/app-data/stats`);
     const statsSnap = await getDoc(statsDocRef);
 
@@ -56,7 +65,7 @@ export const getStatsForUser = async (userId: string): Promise<LearningStats> =>
     if (statsSnap.exists()) {
         stats = statsSnap.data() as LearningStats;
     } else {
-        stats = getInitialStats(new Date().toLocaleDateString('en-CA'));
+        stats = getInitialStats(todayStr);
         // If no stats exist, save the initial stats to Firestore
         await setDoc(statsDocRef, stats);
     }
@@ -64,15 +73,25 @@ export const getStatsForUser = async (userId: string): Promise<LearningStats> =>
     // --- Data Migration & Defaults ---
     if (typeof stats.xp !== 'number') stats.xp = 0;
     if (!stats.lastLoginDate) stats.lastLoginDate = '1970-01-01';
-    if (!stats.weekStartDate) stats.weekStartDate = (startOfWeek(new Date(), { weekStartsOn: 1 })).toISOString();
-    if (typeof stats.reviewedNow !== 'number') stats.reviewedNow = 0;
+    if (!stats.weekStartDate) stats.weekStartDate = startOfThisWeek.toISOString();
 
     // --- Weekly XP Reset Logic ---
     const lastWeekStartDate = new Date(stats.weekStartDate);
-    if (getWeek(new Date(), { weekStartsOn: 1 }) !== getWeek(lastWeekStartDate, { weekStartsOn: 1 })) {
+    if (getWeek(today, { weekStartsOn: 1 }) !== getWeek(lastWeekStartDate, { weekStartsOn: 1 })) {
         stats.xp = 0; // Reset XP
-        stats.weekStartDate = (startOfWeek(new Date(), { weekStartsOn: 1 })).toISOString();
+        stats.weekStartDate = startOfThisWeek.toISOString();
     }
+
+    // --- Daily Data Reset Logic ---
+    if (!stats.reviewedToday || stats.reviewedToday.date !== todayStr) {
+        stats.reviewedToday = { count: 0, date: todayStr, timeSpentSeconds: 0, completedTests: [] };
+    }
+    if (!stats.spellingPractice || stats.spellingPractice.date !== todayStr) {
+        stats.spellingPractice = { count: 0, date: todayStr };
+    }
+    if (!Array.isArray(stats.activityLog)) stats.activityLog = [];
+    if (!Array.isArray(stats.reviewedToday.completedTests)) stats.reviewedToday.completedTests = [];
+    if (typeof stats.reviewedToday.timeSpentSeconds !== 'number') stats.reviewedToday.timeSpentSeconds = 0;
 
     return stats;
 }
@@ -107,7 +126,6 @@ type UpdateStatsParams = {
   testName?: string;
   spelledCount?: number;
   toast?: (props: any) => void;
-  reviewedNowIncrement?: number;
 };
 
 export const updateLearningStats = async ({
@@ -117,7 +135,6 @@ export const updateLearningStats = async ({
   testName,
   spelledCount = 0,
   toast,
-  reviewedNowIncrement = 0,
 }: UpdateStatsParams) => {
   if (!userId) return;
 
@@ -127,8 +144,9 @@ export const updateLearningStats = async ({
   // Update stats
   stats.totalWordsReviewed += reviewedCount;
   stats.timeSpentSeconds += durationSeconds;
+  stats.reviewedToday.count += reviewedCount;
+  stats.reviewedToday.timeSpentSeconds += durationSeconds;
   stats.spellingPractice.count += spelledCount;
-  stats.reviewedNow += reviewedNowIncrement;
 
   // Log activity
   if (!stats.activityLog.includes(today)) {
@@ -136,7 +154,8 @@ export const updateLearningStats = async ({
   }
 
   // Log completed test and award XP
-  if (testName) {
+  if (testName && !stats.reviewedToday.completedTests.includes(testName)) {
+      stats.reviewedToday.completedTests.push(testName);
       stats.xp += XP_AMOUNTS.grammar_test;
       if (toast) {
            toast({

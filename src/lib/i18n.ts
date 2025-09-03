@@ -9,6 +9,7 @@ export const translations = {
       profile: "Profile",
       learn: "Learn",
       learningWords: 'Learning Words',
+      todaysReviews: "Today's Reviews",
       masteredWords: 'Mastered Words',
       champion: "Champion",
       chat: 'Chat',
@@ -453,6 +454,7 @@ export const translations = {
       profile: "الملف الشخصي",
       learn: "تعلّم",
       learningWords: 'كلمات أتعلمها',
+      todaysReviews: "مراجعات اليوم",
       masteredWords: 'كلمات أتقنتها',
       champion: "البطل",
       chat: 'محادثة',
@@ -891,7 +893,7 @@ export const translations = {
 };
 
 export type TranslationKey = 
-    | 'sidebar.dashboard' | 'sidebar.myWords' | 'sidebar.addWord' | 'sidebar.myStudents' | 'sidebar.profile' | 'sidebar.learn'
+    | 'sidebar.dashboard' | 'sidebar.myWords' | 'sidebar.addWord' | 'sidebar.myStudents' | 'sidebar.profile' | 'sidebar.learn' | 'sidebar.todaysReviews'
     | 'sidebar.learningWords' | 'sidebar.masteredWords' | 'sidebar.champion' | 'sidebar.chat' | 'sidebar.classmates' | 'sidebar.grammar' | 'sidebar.requests' | 'sidebar.admins' | 'sidebar.about' | 'sidebar.spelling'
     | 'spellingPractice.title' | 'spellingPractice.description' | 'spellingPractice.todayCounter' | 'spellingPractice.noWordsForFilters' | 'spellingPractice.limitReached' | 'spellingPractice.comeBack' | 'spellingPractice.check' | 'spellingPractice.newWord' | 'spellingPractice.clearFilters'
     | 'spellingPractice.allUnits' | 'spellingPractice.allLessons' | 'spellingPractice.filterByUnit' | 'spellingPractice.filterByLesson' | 'spellingPractice.loading' | 'spellingPractice.noWordsYet' | 'spellingPractice.noWordsYetHint' | 'spellingPractice.placeholder'
@@ -923,7 +925,7 @@ export type TranslationKey =
     | 'dashboard.loading'
     | 'learn.backToDashboard' | 'learn.sessionFinished.title' | 'learn.sessionFinished.description'
     | 'quizCard.checkAnswer'
-    | 'quizCard.schedule.title' | 'quizCard.schedule.description' | 'quizCard.schedule.tomorrow' | 'quizCard.schedule.inTwoDays' | 'quizCard.schedule.inAWeek' | 'quizCard.schedule.inTwoWeeks' | 'quizCard.schedule.inAMonth' | 'quizCard.schedule.mastered' | 'quizCard.schedule.recommended'
+    | 'quizCard.schedule.title' | 'quizCard.schedule.description' | 'quizCard.schedule.tomorrow' | 'quizCard.schedule.inTwoDays' | 'quizCard.schedule.inAWeek' | 'quizCard-schedule.inTwoWeeks' | 'quizCard.schedule.inAMonth' | 'quizCard.schedule.mastered' | 'quizCard.schedule.recommended'
     | 'addWord.title' | 'addWord.description' | 'addWord.cardTitle' | 'addWord.cardDescription'
     | 'addWord.form.unitLabel' | 'addWord.form.unitPlaceholder' | 'addWord.form.lessonLabel' | 'addWord.form.lessonPlaceholder' | 'addWord.form.wordLabel' | 'addWord.form.wordPlaceholder' | 'addWord.form.definitionLabel' | 'addWord.form.definitionPlaceholder' | 'addWord.form.imageLabel' | 'addWord.form.addButton' | 'addWord.form.addingButton'
     | 'editWord.title' | 'editWord.description' | 'editWord.cardTitle' | 'editWord.cardDescription' | 'editWord.form.currentImage' | 'editWord.form.imageHelper' | 'editWord.form.saveButton' | 'editWord.form.savingButton'

@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { getAiWordOptions } from "@/lib/actions";
@@ -14,6 +13,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { type Word } from "@/lib/data";
 import { getWordsBySupervisor, addWordDB } from "@/lib/firestore";
 import { useLanguage } from "@/hooks/use-language";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 const toBase64 = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -30,6 +31,8 @@ export function AddWordForm() {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [isPending, setIsPending] = useState(false);
+  const [unit, setUnit] = useState<string>("");
+  const [lesson, setLesson] = useState<string>("");
   
   const userId = searchParams.get("userId") || "sup1";
 
@@ -41,14 +44,14 @@ export function AddWordForm() {
     const wordInput = formData.get("word") as string;
     const definitionInput = formData.get("definition") as string;
     const imageInput = formData.get("image") as File;
-    const unitInput = formData.get("unit") as string;
-    const lessonInput = formData.get("lesson") as string;
+    const unitInput = unit;
+    const lessonInput = lesson;
 
     // --- Client-side validation ---
-    if (!wordInput || !definitionInput || !imageInput || imageInput.size === 0) {
+    if (!wordInput || !definitionInput || !imageInput || imageInput.size === 0 || !unitInput || !lessonInput) {
         toast({
             title: t('toasts.error'),
-            description: "Please fill out all required fields (Word, Definition, Image).",
+            description: "Please fill out all required fields (Unit, Lesson, Word, Definition, Image).",
             variant: "destructive",
         });
         setIsPending(false);
@@ -88,6 +91,7 @@ export function AddWordForm() {
                 options: [...result.options, wordInput], // AI options + correct option
                 correctOption: wordInput,
                 supervisorId: userId,
+                arabicTranslation: "",
             };
 
             // Save to Firestore
@@ -131,11 +135,29 @@ export function AddWordForm() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="grid gap-2">
             <Label htmlFor="unit">{t('addWord.form.unitLabel')}</Label>
-            <Input id="unit" name="unit" placeholder={t('addWord.form.unitPlaceholder')} />
+            <Select onValueChange={setUnit} name="unit">
+                <SelectTrigger>
+                    <SelectValue placeholder={t('addWord.form.unitPlaceholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                    {Array.from({ length: 8 }, (_, i) => i + 1).map(u => (
+                        <SelectItem key={u} value={`Unit ${u}`}>{`Unit ${u}`}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
         </div>
         <div className="grid gap-2">
             <Label htmlFor="lesson">{t('addWord.form.lessonLabel')}</Label>
-            <Input id="lesson" name="lesson" placeholder={t('addWord.form.lessonPlaceholder')} />
+            <Select onValueChange={setLesson} name="lesson">
+                 <SelectTrigger>
+                    <SelectValue placeholder={t('addWord.form.lessonPlaceholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                    {Array.from({ length: 8 }, (_, i) => i + 1).map(l => (
+                        <SelectItem key={l} value={`Lesson ${l}`}>{`Lesson ${l}`}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
         </div>
       </div>
       <div className="grid gap-2">

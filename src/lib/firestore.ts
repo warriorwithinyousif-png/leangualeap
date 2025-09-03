@@ -19,7 +19,7 @@ import {
 import { db } from './firebase'; // Import the initialized db instance
 import type { User, Word, Message, SupervisorMessage, PeerMessage } from './data';
 import type { WordProgress } from './storage';
-import { isToday } from 'date-fns';
+import { isToday, addYears } from 'date-fns';
 
 // --- User Functions ---
 export async function getNextSupervisorShortId(): Promise<string> {
@@ -395,14 +395,14 @@ export async function getWordsForStudent(studentId: string): Promise<(Word & Wor
                 nextReview: new Date(progress.nextReview),
             };
         } else {
-            // This is a new word for the student, make it due immediately.
-            const now = new Date();
-            now.setHours(0, 0, 0, 0); // Set to beginning of today
+            // This is a new word for the student.
+            // Set its initial review date far in the future so it doesn't appear in "Today's Reviews".
+            // It will be properly scheduled when the user interacts with it on the "Learn" page.
             return {
                 ...supervisorWord,
                 id: supervisorWord.id,
                 strength: 0,
-                nextReview: now,
+                nextReview: addYears(new Date(), 100), // Far future date
                 studentId: studentId
             };
         }
@@ -435,13 +435,11 @@ export async function getWordForReview(
   let filteredWords = allWords;
 
   // Filter by unit/lesson first if provided for general review sessions
-  if (reviewType !== 'today') {
-    if (unit) {
-        filteredWords = filteredWords.filter(word => word.unit === unit);
-    }
-    if (lesson) {
-        filteredWords = filteredWords.filter(word => word.lesson === lesson);
-    }
+  if (unit) {
+      filteredWords = filteredWords.filter(word => word.unit === unit);
+  }
+  if (lesson) {
+      filteredWords = filteredWords.filter(word => word.lesson === lesson);
   }
   
   let dueWords;
@@ -449,8 +447,8 @@ export async function getWordForReview(
     // Filter for words scheduled for today
     dueWords = filteredWords.filter(word => isToday(new Date(word.nextReview)) && word.strength >= 0);
   } else {
-    // Default behavior: get all words that are due (today or in the past)
-    dueWords = filteredWords.filter(word => new Date(word.nextReview) <= new Date() && word.strength >= 0);
+    // Default behavior for learn page: get words not yet mastered or learned
+    dueWords = filteredWords.filter(word => word.strength === 0);
   }
 
   if (dueWords.length === 0) return null;

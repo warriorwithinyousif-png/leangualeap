@@ -27,6 +27,7 @@ export type Word = {
   id: string;
   word: string;
   definition: string;
+  arabicTranslation: string;
   unit: string;
   lesson: string;
   imageUrl: string;

@@ -43,13 +43,13 @@ export function WordAudioPlayer({ word }: WordAudioPlayerProps) {
       size="icon"
       onClick={handlePlayAudio}
       disabled={isLoading}
-      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+      className="h-9 w-9 text-primary hover:text-primary/90"
       aria-label={`Listen to the word: ${word}`}
     >
       {isLoading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
+        <Loader2 className="h-5 w-5 animate-spin" />
       ) : (
-        <Volume2 className="h-4 w-4" />
+        <Volume2 className="h-6 w-6" />
       )}
     </Button>
   );

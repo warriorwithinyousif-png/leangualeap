@@ -8,6 +8,7 @@ import { getMessages, getWordsBySupervisor, getAllUsers, getUserById, getStudent
 import { useEffect, useState, useCallback } from "react";
 import { Loader2 } from "lucide-react";
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
+import { isToday } from "date-fns";
 
 export function DashboardSidebarWrapper() {
   const searchParams = useSearchParams();
@@ -24,7 +25,7 @@ export function DashboardSidebarWrapper() {
   const [adminsCount, setAdminsCount] = useState(0);
   const [learningWordsCount, setLearningWordsCount] = useState(0);
   const [masteredWordsCount, setMasteredWordsCount] = useState(0);
-  const [chatConversationsCount, setChatConversationsCount] = useState(0);
+  const [todaysReviewsCount, setTodaysReviewsCount] = useState(0);
   
   const fetchUserAndCounts = useCallback(async () => {
       if (!userId) {
@@ -54,7 +55,6 @@ export function DashboardSidebarWrapper() {
           
           const students = await getStudentsBySupervisorId(userId);
           setStudentsCount(students.length);
-          setChatConversationsCount(students.length);
           
           const studentIds = students.map(s => s.id);
           let totalUnread = 0;
@@ -75,7 +75,6 @@ export function DashboardSidebarWrapper() {
 
            const classmates = (await getStudentsBySupervisorId(foundUser.supervisorId)).filter(s => s.id !== foundUser.id);
            setClassmatesCount(classmates.length);
-           setChatConversationsCount(classmates.length + (foundUser.supervisorId ? 1 : 0));
            
            let peerUnreadCount = 0;
            for (const classmate of classmates) {
@@ -88,10 +87,13 @@ export function DashboardSidebarWrapper() {
            setUnreadChatCount(supervisorUnreadCount + peerUnreadCount);
            
            const studentProgress = await getStudentProgress(foundUser.id);
-           const learning = studentProgress.filter(p => p.strength >= 0).length;
+           const learning = studentProgress.filter(p => p.strength >= 0 && !isToday(p.nextReview)).length;
            const mastered = studentProgress.filter(p => p.strength === -1).length;
+           const dueToday = studentProgress.filter(p => p.strength >= 0 && isToday(p.nextReview)).length;
+
            setLearningWordsCount(learning);
            setMasteredWordsCount(mastered);
+           setTodaysReviewsCount(dueToday);
       }
       setLoading(false);
     }, [userId]);
@@ -100,12 +102,8 @@ export function DashboardSidebarWrapper() {
   useEffect(() => {
     fetchUserAndCounts();
     
-    // This is a simplified listener. A real-world app might need a more robust
-    // way to sync state across tabs, like using BroadcastChannel or Firestore real-time updates.
-    const handleStorageChange = (event: StorageEvent) => {
-        if (event.key === 'unreadCountNeedsUpdate' || event.key === 'users' || event.key === 'userWords' || event.key === 'adminMessages' || event.key === 'messagesNeedsUpdate') {
-            fetchUserAndCounts();
-        }
+    const handleStorageChange = () => {
+        fetchUserAndCounts();
     };
 
     window.addEventListener('storage', handleStorageChange);
@@ -142,7 +140,7 @@ export function DashboardSidebarWrapper() {
         adminsCount={adminsCount}
         learningWordsCount={learningWordsCount}
         masteredWordsCount={masteredWordsCount}
-        chatConversationsCount={chatConversationsCount}
+        todaysReviewsCount={todaysReviewsCount}
     />
   );
 }

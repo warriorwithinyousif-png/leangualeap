@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from "next/link";
@@ -19,6 +20,7 @@ import {
   Target,
   SpellCheck,
   Info,
+  CalendarCheck,
 } from "lucide-react";
 
 import {
@@ -78,6 +80,7 @@ type DashboardSidebarProps = {
   learningWordsCount?: number;
   masteredWordsCount?: number;
   chatConversationsCount?: number;
+  todaysReviewsCount?: number;
 };
 
 export function DashboardSidebar({ 
@@ -91,6 +94,7 @@ export function DashboardSidebar({
   learningWordsCount = 0,
   masteredWordsCount = 0,
   chatConversationsCount = 0,
+  todaysReviewsCount = 0,
 }: DashboardSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -128,6 +132,13 @@ export function DashboardSidebar({
         icon: <GraduationCap />,
         roles: ["student"],
         totalCount: learningWordsCount,
+    },
+    {
+        href: `/dashboard/todays-reviews?userId=${user.id}`,
+        label: t('sidebar.todaysReviews'),
+        icon: <CalendarCheck />,
+        roles: ["student"],
+        totalCount: todaysReviewsCount,
     },
     {
         href: `/dashboard/mastered-words?userId=${user.id}`,

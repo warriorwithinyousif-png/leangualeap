@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { Word } from "@/lib/data";
@@ -18,7 +17,7 @@ import { Button } from "./ui/button";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { CheckCircle, XCircle, Star, Calendar } from "lucide-react";
-import type { ScheduleOption } from "@/app/learn/learn-client-page";
+import type { ScheduleOption } from "../lib/types";
 import { useLanguage } from "@/hooks/use-language";
 import { WordProgress } from "@/lib/storage";
 
@@ -91,9 +90,10 @@ export function QuizCard({ word, onCorrect, onIncorrect }: QuizCardProps) {
   
   const getRecommendedOption = (): ScheduleOption => {
       const strength = word.strength || 0;
-      if (strength === 0) return 'twoDays';
-      if (strength === 1) return 'week';
-      if (strength === 2) return 'twoWeeks';
+      if (strength <= 1) return 'tomorrow';
+      if (strength === 2) return 'twoDays';
+      if (strength === 3) return 'week';
+      if (strength === 4) return 'twoWeeks';
       return 'month';
   }
 
