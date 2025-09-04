@@ -1,0 +1,232 @@
+{
+  "version": 3,
+  "pages404": true,
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [],
+  "dynamicRoutes": [
+    {
+      "page": "/dashboard/edit-word/[wordId]",
+      "regex": "^/dashboard/edit\\-word/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPwordId": "nxtPwordId"
+      },
+      "namedRegex": "^/dashboard/edit\\-word/(?<nxtPwordId>[^/]+?)(?:/)?$"
+    }
+  ],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/contact-admin",
+      "regex": "^/contact\\-admin(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/contact\\-admin(?:/)?$"
+    },
+    {
+      "page": "/dashboard",
+      "regex": "^/dashboard(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard(?:/)?$"
+    },
+    {
+      "page": "/dashboard/about",
+      "regex": "^/dashboard/about(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/about(?:/)?$"
+    },
+    {
+      "page": "/dashboard/add-word",
+      "regex": "^/dashboard/add\\-word(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/add\\-word(?:/)?$"
+    },
+    {
+      "page": "/dashboard/admins",
+      "regex": "^/dashboard/admins(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/admins(?:/)?$"
+    },
+    {
+      "page": "/dashboard/champion",
+      "regex": "^/dashboard/champion(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/champion(?:/)?$"
+    },
+    {
+      "page": "/dashboard/chat",
+      "regex": "^/dashboard/chat(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/chat(?:/)?$"
+    },
+    {
+      "page": "/dashboard/classmates",
+      "regex": "^/dashboard/classmates(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/classmates(?:/)?$"
+    },
+    {
+      "page": "/dashboard/grammar",
+      "regex": "^/dashboard/grammar(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/grammar(?:/)?$"
+    },
+    {
+      "page": "/dashboard/grammar/comprehensive-quiz",
+      "regex": "^/dashboard/grammar/comprehensive\\-quiz(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/grammar/comprehensive\\-quiz(?:/)?$"
+    },
+    {
+      "page": "/dashboard/grammar/past-simple",
+      "regex": "^/dashboard/grammar/past\\-simple(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/grammar/past\\-simple(?:/)?$"
+    },
+    {
+      "page": "/dashboard/grammar/past-simple/quiz",
+      "regex": "^/dashboard/grammar/past\\-simple/quiz(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/grammar/past\\-simple/quiz(?:/)?$"
+    },
+    {
+      "page": "/dashboard/grammar/prepositions-of-place/quiz",
+      "regex": "^/dashboard/grammar/prepositions\\-of\\-place/quiz(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/grammar/prepositions\\-of\\-place/quiz(?:/)?$"
+    },
+    {
+      "page": "/dashboard/grammar/present-continuous",
+      "regex": "^/dashboard/grammar/present\\-continuous(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/grammar/present\\-continuous(?:/)?$"
+    },
+    {
+      "page": "/dashboard/grammar/present-continuous/quiz",
+      "regex": "^/dashboard/grammar/present\\-continuous/quiz(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/grammar/present\\-continuous/quiz(?:/)?$"
+    },
+    {
+      "page": "/dashboard/grammar/present-simple",
+      "regex": "^/dashboard/grammar/present\\-simple(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/grammar/present\\-simple(?:/)?$"
+    },
+    {
+      "page": "/dashboard/grammar/present-simple/quiz",
+      "regex": "^/dashboard/grammar/present\\-simple/quiz(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/grammar/present\\-simple/quiz(?:/)?$"
+    },
+    {
+      "page": "/dashboard/learning-words",
+      "regex": "^/dashboard/learning\\-words(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/learning\\-words(?:/)?$"
+    },
+    {
+      "page": "/dashboard/mastered-words",
+      "regex": "^/dashboard/mastered\\-words(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/mastered\\-words(?:/)?$"
+    },
+    {
+      "page": "/dashboard/messages",
+      "regex": "^/dashboard/messages(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/messages(?:/)?$"
+    },
+    {
+      "page": "/dashboard/profile",
+      "regex": "^/dashboard/profile(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/profile(?:/)?$"
+    },
+    {
+      "page": "/dashboard/students",
+      "regex": "^/dashboard/students(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/students(?:/)?$"
+    },
+    {
+      "page": "/dashboard/todays-reviews",
+      "regex": "^/dashboard/todays\\-reviews(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/todays\\-reviews(?:/)?$"
+    },
+    {
+      "page": "/dashboard/words",
+      "regex": "^/dashboard/words(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/words(?:/)?$"
+    },
+    {
+      "page": "/favicon.ico",
+      "regex": "^/favicon\\.ico(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/favicon\\.ico(?:/)?$"
+    },
+    {
+      "page": "/learn",
+      "regex": "^/learn(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/learn(?:/)?$"
+    },
+    {
+      "page": "/login",
+      "regex": "^/login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/login(?:/)?$"
+    },
+    {
+      "page": "/register",
+      "regex": "^/register(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/register(?:/)?$"
+    },
+    {
+      "page": "/welcome",
+      "regex": "^/welcome(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/welcome(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "RSC",
+    "varyHeader": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Router-Segment-Prefetch",
+    "prefetchHeader": "Next-Router-Prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSuffix": ".prefetch.rsc",
+    "prefetchSegmentHeader": "Next-Router-Segment-Prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments"
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  },
+  "rewrites": []
+}
