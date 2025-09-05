@@ -22,16 +22,16 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: '/(.*)',
+        source: '/:path*',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate',
+            value: 'no-cache',
           },
         ],
       },
       {
-        source: '/_next/static/(.*)',
+        source: '/_next/static/:path*',
         headers: [
           {
             key: 'Cache-Control',
