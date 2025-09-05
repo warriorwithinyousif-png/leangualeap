@@ -1,19 +1,7 @@
-# Firebase App Hosting configuration for Next.js SSR
+# Settings to manage and configure a Firebase App Hosting backend.
+# https://firebase.google.com/docs/app-hosting/configure
 
 runConfig:
-  # Keep low for dev, increase for production traffic
+  # Increase this value if you'd like to automatically spin up
+  # more instances in response to increased traffic.
   maxInstances: 1
-
-build:
-  # Clean build every deploy to avoid stale output
-  command: |
-    rm -rf .next
-    npm ci
-    npm run build
-
-env:
-  - key: NODE_ENV
-    value: production
-  # Example: add your own public/private env vars here
-  # - key: NEXT_PUBLIC_API_URL
-  #   value: https://api.example.com
