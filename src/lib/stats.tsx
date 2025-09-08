@@ -1,12 +1,12 @@
 
-
 'use client';
 
 import { getWeek, startOfWeek } from 'date-fns';
 import { XpToast } from '@/components/xp-toast';
-import { doc, getDoc, setDoc, getDocs, collection } from 'firebase/firestore';
+import { doc, getDoc, setDoc, getDocs, collection, query, where, Timestamp } from 'firebase/firestore';
 import { db } from './firebase';
 import type { User } from './data';
+import { getUserById } from './firestore'; // Correctly import from firestore.ts
 
 // Represents the results for a single student from the previous week.
 export type LastWeekWinner = {
@@ -40,6 +40,7 @@ export type LearningStats = {
     winners: LastWeekWinner[];
   } | null;
   hasSeenLastWeekResults?: boolean;
+  reviewedNow: number;
 };
 
 export type XpEvent =
@@ -68,6 +69,7 @@ export const getInitialStats = (today: string): LearningStats => ({
     weekStartDate: startOfWeek(new Date(), { weekStartsOn: 1 }).toISOString(), // Monday
     lastWeek: null,
     hasSeenLastWeekResults: true,
+    reviewedNow: 0,
 });
 
 async function getStudentsAndStatsBySupervisor(supervisorId: string): Promise<{user: User, stats: LearningStats}[]> {
@@ -107,6 +109,7 @@ export const getStatsForUser = async (userId: string): Promise<LearningStats> =>
     if (!stats.lastLoginDate) stats.lastLoginDate = '1970-01-01';
     if (!stats.weekStartDate) stats.weekStartDate = startOfThisWeek.toISOString();
     if (typeof stats.hasSeenLastWeekResults !== 'boolean') stats.hasSeenLastWeekResults = true;
+    if (typeof stats.reviewedNow !== 'number') stats.reviewedNow = 0;
 
     // --- Weekly Rollover Logic ---
     const lastWeekStartDate = new Date(stats.weekStartDate);
@@ -135,7 +138,8 @@ export const getStatsForUser = async (userId: string): Promise<LearningStats> =>
                     xp: 0,
                     weekStartDate: startOfThisWeek.toISOString(),
                     lastWeek: { weekId: lastWeekId, winners },
-                    hasSeenLastWeekResults: false
+                    hasSeenLastWeekResults: false,
+                    reviewedNow: 0,
                 }, { merge: true });
             }
             
@@ -156,7 +160,7 @@ export const getStatsForUser = async (userId: string): Promise<LearningStats> =>
         stats.spellingPractice = { count: 0, date: todayStr };
     }
     if (!Array.isArray(stats.activityLog)) stats.activityLog = [];
-    if (!Array.isArray(stats.reviewedToday.completedTests)) stats.reviewedToday.completedTests = [];
+    if (!stats.reviewedToday.completedTests || !Array.isArray(stats.reviewedToday.completedTests)) stats.reviewedToday.completedTests = [];
     if (typeof stats.reviewedToday.timeSpentSeconds !== 'number') stats.reviewedToday.timeSpentSeconds = 0;
 
     return stats;
@@ -193,6 +197,7 @@ type UpdateStatsParams = {
   spelledCount?: number;
   toast?: (props: any) => void;
   markAsSeen?: boolean;
+  reviewedNowIncrement?: number;
 };
 
 export const updateLearningStats = async ({
@@ -203,6 +208,7 @@ export const updateLearningStats = async ({
   spelledCount = 0,
   toast,
   markAsSeen = false,
+  reviewedNowIncrement = 0,
 }: UpdateStatsParams) => {
   if (!userId) return;
 
@@ -215,6 +221,7 @@ export const updateLearningStats = async ({
   stats.reviewedToday.count += reviewedCount;
   stats.reviewedToday.timeSpentSeconds += durationSeconds;
   stats.spellingPractice.count += spelledCount;
+  stats.reviewedNow += reviewedNowIncrement;
 
   // Log activity
   if (!stats.activityLog.includes(today)) {
@@ -222,8 +229,10 @@ export const updateLearningStats = async ({
   }
 
   // Log completed test and award XP
-  if (testName && !stats.reviewedToday.completedTests.includes(testName)) {
-      stats.reviewedToday.completedTests.push(testName);
+  if (testName) {
+      if (!stats.reviewedToday.completedTests.includes(testName)) {
+        stats.reviewedToday.completedTests.push(testName);
+      }
       stats.xp += XP_AMOUNTS.grammar_test;
       if (toast) {
            toast({
@@ -240,18 +249,3 @@ export const updateLearningStats = async ({
   const statsDocRef = doc(db, `users/${userId}/app-data/stats`);
   await setDoc(statsDocRef, stats, { merge: true });
 };
-
-
-// Helper function needed for stats rollover
-async function getUserById(id: string): Promise<User | undefined> {
-    if (!id) return undefined;
-    const userDocRef = doc(db, 'users', id);
-    const userSnap = await getDoc(userDocRef);
-    if (!userSnap.exists()) return undefined;
-    const data = userSnap.data();
-    if (data.trialExpiresAt && data.trialExpiresAt instanceof Timestamp) {
-        data.trialExpiresAt = data.trialExpiresAt.toDate().toISOString();
-    }
-    return { ...data, id: userSnap.id } as User;
-}
-

@@ -19,7 +19,7 @@ import { ClientOnly } from "@/components/client-only";
 import { useLanguage } from "@/hooks/use-language";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
-import { updateLearningStats, updateXp, XP_AMOUNTS } from "@/lib/stats.tsx";
+import { updateLearningStats, updateXp, XP_AMOUNTS } from "@/lib/stats";
 import { WordProgress } from "@/lib/storage";
 import Image from "next/image";
 import { WordAudioPlayer } from "@/components/word-audio-player";

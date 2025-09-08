@@ -203,7 +203,7 @@ export default function Dashboard() {
                             </Button>
                         ) : (
                             <Button asChild className="w-full">
-                                <Link href={`/learn?userId=${user.id}&unit=${encodeURIComponent(selectedUnit || '')}&lesson=${encodeURIComponent(selectedLesson || '')}`}>
+                                <Link href={`/learn?userId=${user.id}&unit=${encodeURIComponent(selectedUnit || '')}&lesson=${encodeURIComponent(selectedLesson || '')}`}>\
                                     {t('dashboard.student.startReview')}
                                 </Link>
                             </Button>
@@ -211,7 +211,7 @@ export default function Dashboard() {
                     </div>
                 </CardContent>
             </Card>
-             <Link href={`/dashboard/todays-reviews?userId=${user.id}`} className="hover:opacity-90 transition-opacity">
+             <Link href={`/dashboard/todays-reviews?userId=${user.id}`} className="hover:opacity-90 transition-opacity">\
                 <Card className="h-full">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">
@@ -239,7 +239,7 @@ export default function Dashboard() {
                     </p>
                 </CardContent>
             </Card>
-            <Link href={`/dashboard/learning-words?userId=${user.id}`} className="hover:opacity-90 transition-opacity">
+            <Link href={`/dashboard/learning-words?userId=${user.id}`} className="hover:opacity-90 transition-opacity">\
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">
@@ -255,7 +255,7 @@ export default function Dashboard() {
                     </CardContent>
                 </Card>
             </Link>
-            <Link href={`/dashboard/mastered-words?userId=${user.id}`} className="hover:opacity-90 transition-opacity">
+            <Link href={`/dashboard/mastered-words?userId=${user.id}`} className="hover:opacity-90 transition-opacity">\
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">
@@ -344,7 +344,7 @@ export default function Dashboard() {
                            {testName}
                          </label>
                        </div>
-                     ))}
+                     ))}\
                  </CardContent>
              </Card>
          </div>

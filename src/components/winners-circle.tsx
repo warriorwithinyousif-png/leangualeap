@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import {
@@ -12,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Trophy, Star } from "lucide-react";
-import { type LastWeekWinner } from "@/lib/stats.tsx";
+import { type LastWeekWinner } from "@/lib/stats";
 import { cn } from "@/lib/utils";
 
 interface WinnersCircleProps {
